@@ -350,6 +350,7 @@ Item {
     if (!installed || busy) return
     _desired = 0
     _expectDown = true
+    trafficReset()
     pendingLabel = "Disconnecting…"
     actionStatus = ""
     lastError = ""
@@ -381,6 +382,7 @@ Item {
     if (!installed || busy) return
     _desired = 0
     _expectDown = true
+    trafficReset()
     pendingLabel = "Signing out…"
     actionProcess.command = ["protonvpn", "signout"]
     actionProcess.running = true

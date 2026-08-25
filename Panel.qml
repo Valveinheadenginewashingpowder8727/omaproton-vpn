@@ -660,7 +660,9 @@ Panel {
 
           // ── Traffic ─────────────────────────────────────────────────────
           Traffic {
-            visible: vpn.connected && vpn.linkActive
+            // Only over a live, settled tunnel: not while connecting or
+            // disconnecting, and gone the instant a disconnect is asked for.
+            visible: vpn.connected && vpn.linkActive && !vpn.busy && vpn.rxHistory.length > 0
             width: parent.width
             rxHistory: vpn.rxHistory
             txHistory: vpn.txHistory
