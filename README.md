@@ -188,6 +188,10 @@ Two switches, saved to Proton's own settings:
   plan Proton only allows malware blocking; the widget steps down to that
   automatically.
 
+Below the switches, **Account** shows who's signed in and the plan, with a
+**Sign out** row — it asks for a second click within five seconds, because
+signing out also disconnects.
+
 If the VPN does drop unexpectedly, you also get a desktop notification —
 "Proton VPN disconnected — You're no longer protected." Turn notifications off
 in the widget's settings if you'd rather not.
@@ -232,7 +236,7 @@ row.
 ### The detail rows
 
 When connected, the panel shows the server, its location, load, and protocol —
-exactly what `protonvpn status` prints. Below that: your account.
+exactly what `protonvpn status` prints.
 
 The **Server** line updates within seconds from NetworkManager even while a
 connect is still in progress. The other rows come from the CLI and can lag a
@@ -330,8 +334,9 @@ traffic beyond what the client already does on its own schedule.
 **Notifications** go through `notify-send` and contain only the connection
 state and server name.
 
-**On screen.** The panel shows your Proton account email. If you screenshot or
-screen-share the open panel, that's visible.
+**On screen.** Your Proton account email is shown only under Protection →
+Account, not in the panel's default view — but if you screenshot or
+screen-share that tab, it's visible.
 
 ## Notes
 

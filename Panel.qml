@@ -35,6 +35,9 @@ Panel {
   // The city that was clicked on the map: its row is scrolled into view and
   // pulses until the next click anywhere. {code, city} or null.
   property var highlight: null
+  // Sign out is destructive (it disconnects too), so it takes two clicks
+  // within five seconds.
+  property bool signOutArmed: false
 
   // Drilled into one country's server list rather than the country list.
   readonly property bool drilled: vpn.serversCountry !== ""
@@ -94,7 +97,7 @@ Panel {
     list.push({ name: "quick", count: quickActions.length })
     list.push({ name: "tabs", count: tabs.length })
     if (tab === "protection") {
-      list.push({ name: "protection", count: 2 })
+      list.push({ name: "protection", count: 3 })
     } else {
       if (vpn.recents.length > 0) list.push({ name: "recents", count: vpn.recents.length })
       if (drilled) list.push({ name: "servers", count: serverRowCount })
@@ -240,7 +243,11 @@ Panel {
     else if (focusSection === "nudge") { if (nudgeIndex === 0) vpn.toggleKillSwitch(); else vpn.dismissNudge() }
     else if (focusSection === "quick") runQuick(quickActions[quickIndex].key)
     else if (focusSection === "tabs") setTab(tabs[tabIndex].key)
-    else if (focusSection === "protection") { if (protectionIndex === 0) vpn.toggleKillSwitch(); else vpn.toggleNetShield() }
+    else if (focusSection === "protection") {
+      if (protectionIndex === 0) vpn.toggleKillSwitch()
+      else if (protectionIndex === 1) vpn.toggleNetShield()
+      else requestSignOut()
+    }
     else if (focusSection === "recents") { vpn.connectRecent(recentIndex); showConnection() }
     // Enter on a country opens its servers rather than connecting blind —
     // the first row inside is still "Fastest in <country>", so the old
@@ -281,6 +288,14 @@ Panel {
     focusSection = "header"
     if (panelFlick) panelFlick.contentY = 0
   }
+
+  function requestSignOut() {
+    if (!signOutArmed) { signOutArmed = true; signOutArm.restart(); return }
+    signOutArmed = false
+    vpn.signOut()
+  }
+
+  Timer { id: signOutArm; interval: 5000; onTriggered: root.signOutArmed = false }
 
   function setTab(key) {
     if (key !== "protection" && key !== "connections") return
@@ -328,6 +343,9 @@ Panel {
     else if (focusSection === "countries") column = countryColumn
     else if (focusSection === "servers") column = serverColumn
     var i = sectionIndex(focusSection)
+    // The Protection column carries the Account header and rows after its two
+    // switches; the sign-out row is its last child.
+    if (focusSection === "protection" && i === 2 && column) i = column.children.length - 1
     if (column && i >= 0 && i < column.children.length) scrollItemIntoView(column.children[i])
   }
 
@@ -675,14 +693,6 @@ Panel {
             fontFamily: root.fontFamily
           }
 
-          Column {
-            visible: vpn.signedIn && vpn.account !== ""
-            width: parent.width
-            spacing: Style.spacing.labelGap
-            InfoPair { label: "Account"; value: vpn.account }
-            InfoPair { visible: vpn.plan !== ""; label: "Plan"; value: vpn.plan }
-          }
-
           // ── Kill-switch nudge ───────────────────────────────────────────
           BorderSurface {
             visible: root.nudgeVisible
@@ -850,6 +860,32 @@ Panel {
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 1) }
                 onClicked: { root.clearHighlight(); vpn.toggleNetShield() }
+              }
+
+              // ── Account ─────────────────────────────────────────────────
+              PanelSectionHeader {
+                text: "ACCOUNT"
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                topPadding: Style.space(10)
+              }
+
+              Column {
+                width: parent.width
+                spacing: Style.spacing.labelGap
+                InfoPair { label: "Signed in as"; value: vpn.account }
+                InfoPair { visible: vpn.plan !== ""; label: "Plan"; value: vpn.plan }
+              }
+
+              ActionRow {
+                width: parent.width
+                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 2
+                icon: "󰍃"
+                title: root.signOutArmed ? "Click again to sign out" : "Sign out"
+                subtitle: root.signOutArmed ? "Disconnects and clears the session on this computer" : "You'll need your password and 2FA to sign back in"
+                enabled: !vpn.busy
+                onEntered: root.setCursor("protection", 2)
+                onClicked: root.requestSignOut()
               }
             }
           }
