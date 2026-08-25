@@ -17,6 +17,13 @@ Panel {
   // name, a row count, and its own index property; sectionList() says which
   // ones exist right now.
   property string focusSection: "header"
+  // Which of the two tabs under Quick Connect is showing.
+  property string tab: "connections"
+  readonly property var tabs: [
+    { key: "protection", label: "Protection" },
+    { key: "connections", label: "Connections" }
+  ]
+  property int tabIndex: 1
   property int nudgeIndex: 0
   property int quickIndex: 0
   property int protectionIndex: 0
@@ -82,15 +89,20 @@ Panel {
     var list = [{ name: "header", count: 1 }]
     if (nudgeVisible) list.push({ name: "nudge", count: 2 })
     list.push({ name: "quick", count: quickActions.length })
-    list.push({ name: "protection", count: 2 })
-    if (vpn.recents.length > 0) list.push({ name: "recents", count: vpn.recents.length })
-    if (drilled) list.push({ name: "servers", count: serverRowCount })
-    else if (filteredCountries.length > 0) list.push({ name: "countries", count: filteredCountries.length })
+    list.push({ name: "tabs", count: tabs.length })
+    if (tab === "protection") {
+      list.push({ name: "protection", count: 2 })
+    } else {
+      if (vpn.recents.length > 0) list.push({ name: "recents", count: vpn.recents.length })
+      if (drilled) list.push({ name: "servers", count: serverRowCount })
+      else if (filteredCountries.length > 0) list.push({ name: "countries", count: filteredCountries.length })
+    }
     return list
   }
 
   function sectionIndex(name) {
     if (name === "nudge") return nudgeIndex
+    if (name === "tabs") return tabIndex
     if (name === "quick") return quickIndex
     if (name === "protection") return protectionIndex
     if (name === "recents") return recentIndex
@@ -101,6 +113,7 @@ Panel {
 
   function setSectionIndex(name, value) {
     if (name === "nudge") nudgeIndex = value
+    else if (name === "tabs") tabIndex = value
     else if (name === "quick") quickIndex = value
     else if (name === "protection") protectionIndex = value
     else if (name === "recents") recentIndex = value
@@ -203,6 +216,7 @@ Panel {
     else if (focusSection === "header") vpn.toggle()
     else if (focusSection === "nudge") { if (nudgeIndex === 0) vpn.toggleKillSwitch(); else vpn.dismissNudge() }
     else if (focusSection === "quick") runQuick(quickActions[quickIndex].key)
+    else if (focusSection === "tabs") setTab(tabs[tabIndex].key)
     else if (focusSection === "protection") { if (protectionIndex === 0) vpn.toggleKillSwitch(); else vpn.toggleNetShield() }
     else if (focusSection === "recents") { vpn.connectRecent(recentIndex); showConnection() }
     // Enter on a country opens its servers rather than connecting blind —
@@ -244,6 +258,14 @@ Panel {
     if (panelFlick) panelFlick.contentY = 0
   }
 
+  function setTab(key) {
+    if (key !== "protection" && key !== "connections") return
+    tab = key
+    tabIndex = key === "protection" ? 0 : 1
+    anchorPending = false
+    ensureCursor()
+  }
+
   function setCursor(section, index) {
     cursorActive = true
     focusSection = section
@@ -275,6 +297,7 @@ Panel {
     var column = null
     if (focusSection === "nudge") column = nudgeButtons
     else if (focusSection === "quick") column = quickColumn
+    else if (focusSection === "tabs") column = tabRow
     else if (focusSection === "protection") column = protectionColumn
     else if (focusSection === "recents") column = recentColumn
     else if (focusSection === "countries") column = countryColumn
@@ -719,17 +742,33 @@ Panel {
             foreground: root.foreground
           }
 
-          // ── Protection ──────────────────────────────────────────────────
-          Column {
+          // ── Tabs ────────────────────────────────────────────────────────
+          // Same pill strip as the network panel's DNS provider row.
+          Row {
+            id: tabRow
             visible: vpn.signedIn
             width: parent.width
-            spacing: Style.space(10)
+            spacing: Style.space(6)
+            readonly property real cellWidth: (width - spacing * (root.tabs.length - 1)) / root.tabs.length
 
-            PanelSectionHeader {
-              text: "PROTECTION"
-              foreground: root.foreground
-              fontFamily: root.fontFamily
+            Repeater {
+              model: root.tabs
+              TabPill {
+                required property var modelData
+                required property int index
+                width: tabRow.cellWidth
+                tabKey: modelData.key
+                text: modelData.label
+                tabIdx: index
+              }
             }
+          }
+
+          // ── Protection ──────────────────────────────────────────────────
+          Column {
+            visible: vpn.signedIn && root.tab === "protection"
+            width: parent.width
+            spacing: Style.space(10)
 
             Column {
               id: protectionColumn
@@ -770,14 +809,9 @@ Panel {
             }
           }
 
-          PanelSeparator {
-            visible: vpn.signedIn && vpn.recents.length > 0
-            foreground: root.foreground
-          }
-
           // ── Recent ──────────────────────────────────────────────────────
           Column {
-            visible: vpn.signedIn && vpn.recents.length > 0
+            visible: vpn.signedIn && root.tab === "connections" && vpn.recents.length > 0
             width: parent.width
             spacing: Style.space(10)
 
@@ -809,15 +843,10 @@ Panel {
             }
           }
 
-          PanelSeparator {
-            visible: vpn.signedIn
-            foreground: root.foreground
-          }
-
           // ── Countries / cities ──────────────────────────────────────────
           Column {
             id: countrySection
-            visible: vpn.signedIn
+            visible: vpn.signedIn && root.tab === "connections"
             width: parent.width
             spacing: Style.space(10)
 
@@ -1000,6 +1029,24 @@ Panel {
         Layout.alignment: Qt.AlignVCenter
       }
     }
+  }
+
+  component TabPill: Button {
+    id: pill
+    property string tabKey: ""
+    property int tabIdx: 0
+
+    fontSize: Style.font.bodySmall
+    foreground: root.foreground
+    fontFamily: root.fontFamily
+    horizontalPadding: Style.spacing.controlPaddingX
+    verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+    bordered: true
+    active: root.tab === tabKey
+    hasCursor: root.cursorActive && root.focusSection === "tabs" && root.tabIndex === tabIdx
+
+    onHovered: function(isHovered) { if (isHovered) root.setCursor("tabs", pill.tabIdx) }
+    onClicked: root.setTab(tabKey)
   }
 
   component CountryRow: CursorSurface {

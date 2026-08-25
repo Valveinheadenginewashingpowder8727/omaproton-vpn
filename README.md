@@ -165,6 +165,15 @@ pick a country here; Proton picks the best match for you.
 Rows marked **PLUS** need a paid plan. On a free plan they fail with a clear
 "Requires a Proton VPN Plus plan" — nothing breaks.
 
+### Two tabs: Protection and Connections
+
+Under Quick Connect sit two tabs, in the same pill style as Omarchy's network
+panel. **Protection** holds everything about *how* you're protected — the Kill
+Switch, NetShield, and the settings still to come (split tunneling,
+auto-connect). **Connections** holds everywhere you can go — recent places,
+the country and city lists, and saved profiles when they land. The tab you
+pick stays until you close the panel.
+
 ### Protection
 
 <img src="docs/quick-protection.png" width="360" alt="Quick connect rows with PLUS tags, and the Kill Switch and NetShield switches">
@@ -183,12 +192,12 @@ If the VPN does drop unexpectedly, you also get a desktop notification —
 "Proton VPN disconnected — You're no longer protected." Turn notifications off
 in the widget's settings if you'd rather not.
 
-### Recent
+### Connections → Recent
 
 The last three places you connected to, pinned above the country list. Most
 people use the same two or three locations forever; this makes them one click.
 
-### Countries and cities
+### Connections → Countries and cities
 
 Below that is the full country list. **Clicking a country doesn't connect** —
 it drills into that country's cities, so you can see where you'll land before
