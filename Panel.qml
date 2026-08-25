@@ -360,12 +360,10 @@ Panel {
       // Inside a drill, escape backs out one level before it closes the panel.
       onCloseRequested: root.drilled ? root.drillOut() : root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
+      // No single-letter actions on purpose: the panel takes keyboard focus
+      // when it opens, and a stray keystroke must never change the tunnel.
       onTextKey: function(t) {
-        if (t === "/") { filterField.forceActiveFocus(); return }
-        if (t === "c" || t === "C") vpn.connectFastest()
-        else if (t === "d" || t === "D") vpn.disconnect()
-        else if (t === "r" || t === "R") vpn.refresh()
-        else if (t === "s" || t === "S") root.submitSignIn()
+        if (t === "/") filterField.forceActiveFocus()
       }
 
       Flickable {

@@ -5,7 +5,7 @@
   "version": "1.1.0",
   "author": "grichard99",
   "license": "MIT",
-  "description": "Proton VPN, simplified: everything in one bar widget \u2014 install, sign in, connect, pick a city, Kill Switch. No terminal needed.",
+  "description": "Proton VPN without the terminal. One click to connect, a city picker, Kill Switch, sign-in \u2014 all in a bar widget that matches every Omarchy theme.",
   "kinds": [
     "bar-widget"
   ],

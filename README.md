@@ -5,11 +5,17 @@ Install the CLI, sign in, connect, pick a city, switch on the Kill Switch — ev
 step happens in the panel, and none of them need a terminal. Click the Proton mark,
 and you're protected.
 
+It's drawn entirely from Omarchy's theme tokens — colours, font, corners, the
+Proton mark itself — so it looks native in every theme, light or dark, and
+follows along the moment you switch.
+
 It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
 into the CLI's own prompt, and Proton's client owns the session from there.
 
-<img src="preview.png" width="360" alt="The OmaProton VPN panel open in the Omarchy bar">
+<img src="preview.png" width="720" alt="OmaProton VPN — Proton VPN without the terminal">
+
+<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel open in the Omarchy bar">
 
 ## What you need
 
@@ -94,8 +100,9 @@ protected; dimmed means not.
 
 The panel is keyboard-driven too: arrow keys move through every section, `Enter`
 activates, `→` opens a country's city list, `←` backs out, `Esc` backs out of a
-city list or closes the panel. `/` jumps to the country filter, `c` connects to
-the fastest server, `d` disconnects.
+city list or closes the panel. `/` jumps to the country filter. There are no
+single-letter shortcuts on purpose — a stray keystroke should never change your
+connection.
 
 ### The power switch
 
