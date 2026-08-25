@@ -32,6 +32,9 @@ Panel {
   property int serverIndex: 0
   property bool cursorActive: false
   property string filterQuery: ""
+  // The city that was clicked on the map: its row is scrolled into view and
+  // pulses until the next click anywhere. {code, city} or null.
+  property var highlight: null
 
   // Drilled into one country's server list rather than the country list.
   readonly property bool drilled: vpn.serversCountry !== ""
@@ -155,10 +158,25 @@ Panel {
     Qt.callLater(applyAnchor)
   }
 
+  function highlightRow() {
+    if (!highlight || !drilled || vpn.serversCountry !== highlight.code || !serverColumn) return null
+    for (var i = 0; i < vpn.servers.length; i++) {
+      if (vpn.servers[i].city === highlight.city) return serverColumn.children[i + 1] || null
+    }
+    return null
+  }
+
   function applyAnchor() {
     if (!anchorPending || !panelFlick || !countrySection) return
-    panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), countrySection.y))
+    var target = countrySection.y
+    // A map-clicked city sits just under the country header, so both the
+    // "where am I" context and the pulsing row are on screen together.
+    var row = highlightRow()
+    if (row) target = Math.max(countrySection.y, row.mapToItem(panelFlick.contentItem, 0, 0).y - Style.space(110))
+    panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), target))
   }
+
+  function clearHighlight() { highlight = null }
 
   function drillInto(country) {
     if (!country) return
@@ -173,6 +191,7 @@ Panel {
   }
 
   function drillOut() {
+    clearHighlight()
     vpn.clearServers()
     focusSection = "countries"
     serverIndex = 0
@@ -213,6 +232,7 @@ Panel {
   }
 
   function activateCursor() {
+    clearHighlight()
     ensureCursor()
     if (focusSection === "install") vpn.installCli()
     else if (focusSection === "signin") submitSignIn()
@@ -255,6 +275,7 @@ Panel {
   // After picking a place to connect to, bring the map and connection
   // details back into view — that's what the person wants to watch next.
   function showConnection() {
+    clearHighlight()
     anchorPending = false
     cursorActive = false
     focusSection = "header"
@@ -263,6 +284,7 @@ Panel {
 
   function setTab(key) {
     if (key !== "protection" && key !== "connections") return
+    clearHighlight()
     tab = key
     tabIndex = key === "connections" ? 0 : 1
     anchorPending = false
@@ -315,6 +337,7 @@ Panel {
   onOpenedChanged: {
     vpn.panelOpen = opened
     if (opened) {
+      highlight = null
       anchorPending = false
       cursorActive = false
       filterQuery = ""
@@ -503,7 +526,7 @@ Panel {
                   hasCursor: header.ringVisible
                   foreground: hero.foreground
                   onHovered: function(on) { if (on) header.focusHero() }
-                  onToggled: vpn.toggle()
+                  onToggled: { root.clearHighlight(); vpn.toggle() }
 
                   PanelToolTip {
                     visible: powerSwitch.containsMouse
@@ -526,6 +549,7 @@ Panel {
             fontFamily: root.fontFamily
             onCityClicked: function(c) {
               root.drillInto({ code: c.code, name: vpn.countryName(c.code) })
+              root.highlight = { code: c.code, city: c.city }
             }
           }
 
@@ -788,7 +812,7 @@ Panel {
                 foreground: root.foreground
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 0) }
-                onClicked: vpn.toggleKillSwitch()
+                onClicked: { root.clearHighlight(); vpn.toggleKillSwitch() }
               }
 
               Toggle {
@@ -807,7 +831,7 @@ Panel {
                 foreground: root.foreground
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 1) }
-                onClicked: vpn.toggleNetShield()
+                onClicked: { root.clearHighlight(); vpn.toggleNetShield() }
               }
             }
           }
@@ -978,7 +1002,7 @@ Panel {
       cursorShape: actionRow.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
       enabled: actionRow.enabled
       onEntered: actionRow.entered()
-      onClicked: actionRow.clicked()
+      onClicked: { root.clearHighlight(); actionRow.clicked() }
     }
 
     RowLayout {
@@ -1049,7 +1073,7 @@ Panel {
     hasCursor: root.cursorActive && root.focusSection === "tabs" && root.tabIndex === tabIdx
 
     onHovered: function(isHovered) { if (isHovered) root.setCursor("tabs", pill.tabIdx) }
-    onClicked: root.setTab(tabKey)
+    onClicked: root.setTab(tabKey)   // setTab clears the highlight
   }
 
   component CountryRow: CursorSurface {
@@ -1071,7 +1095,7 @@ Panel {
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("countries", countryRow.rowIndex)
-      onClicked: root.drillInto(countryRow.country)
+      onClicked: { root.clearHighlight(); root.drillInto(countryRow.country) }
     }
 
     RowLayout {
@@ -1153,7 +1177,7 @@ Panel {
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("servers", 0)
-      onClicked: root.activateServerRow(0)
+      onClicked: { root.clearHighlight(); root.activateServerRow(0) }
     }
 
     RowLayout {
@@ -1205,13 +1229,32 @@ Panel {
     foreground: root.foreground
     implicitHeight: serverContent.implicitHeight + Style.spacing.rowPaddingX
 
+    // The city that was clicked on the map breathes until the next click.
+    readonly property bool pulsing: root.highlight !== null && server
+                                    && root.highlight.code === vpn.serversCountry
+                                    && root.highlight.city === server.city
+    Rectangle {
+      anchors.fill: parent
+      radius: Style.cornerRadius
+      color: "transparent"
+      border.color: root.foreground
+      border.width: 1.5
+      visible: serverRow.pulsing
+      SequentialAnimation on opacity {
+        running: serverRow.pulsing
+        loops: Animation.Infinite
+        NumberAnimation { from: 0.25; to: 0.95; duration: 700; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 0.95; to: 0.25; duration: 700; easing.type: Easing.InOutSine }
+      }
+    }
+
     MouseArea {
       anchors.fill: parent
       hoverEnabled: true
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("servers", serverRow.rowIndex)
-      onClicked: if (serverRow.server) root.activateServerRow(serverRow.rowIndex)
+      onClicked: { root.clearHighlight(); if (serverRow.server) root.activateServerRow(serverRow.rowIndex) }
     }
 
     RowLayout {
