@@ -670,7 +670,6 @@ Panel {
             sessionTx: vpn.sessionTx
             uptimeSec: vpn.uptimeSec
             foreground: root.foreground
-            accent: root.bar ? root.bar.accent : Color.accent
             fontFamily: root.fontFamily
           }
 

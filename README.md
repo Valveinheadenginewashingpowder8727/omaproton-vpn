@@ -242,9 +242,10 @@ moment behind.
 
 While you're connected, under the details: download and upload rates, a
 60-second sparkline, and the session's totals and uptime. Download is the
-filled area in your theme's accent colour; upload is the dashed line. Hover
-the sparkline to read the values at any second. They're told apart by shape,
-not colour, so they read the same on every theme and for colour-blind eyes.
+filled area with a solid line; upload is the dashed line. Both are drawn in
+your theme's foreground — one ink, like the rest of the panel — and told
+apart by shape, not colour, so they read the same on every theme and for
+colour-blind eyes. Hover the sparkline to read the values at any second.
 
 The numbers come from the kernel's own counters for the tunnel interface
 (`/sys/class/net/proton0/statistics`), read once a second **only while the

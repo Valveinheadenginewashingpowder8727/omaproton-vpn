@@ -4,11 +4,11 @@ import qs.Commons
 
 // Tunnel throughput: two rates, a 60-second sparkline, session totals.
 //
-// Download and upload are told apart by mark, not by hue — a filled area in
-// the theme accent for download, a dashed line in the foreground for upload —
-// because on most Omarchy themes the two tokens are too close to carry a
-// two-series palette on their own. The rate row doubles as the legend, with
-// the same marks beside the numbers. Text wears text tokens only.
+// One ink, like the rest of the panel: everything is drawn from the theme
+// foreground. Download is a filled area with a solid line, upload a dashed
+// line — told apart by mark, never by hue, so it reads the same on every
+// theme and for colour-blind eyes. The rate row doubles as the legend, with
+// a miniature of each mark beside its number.
 Item {
   id: root
 
@@ -22,7 +22,6 @@ Item {
   property int uptimeSec: 0
 
   property color foreground: Color.foreground
-  property color accent: Color.accent
   property string fontFamily: Style.font.family
   readonly property color dim: Qt.darker(foreground, 1.55)
 
@@ -100,12 +99,25 @@ Item {
 
       Row {
         spacing: Style.space(6)
-        Rectangle {
+        Item {
           anchors.verticalCenter: parent.verticalCenter
-          width: Style.space(10); height: Style.space(10)
-          radius: 2
-          color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.28)
-          border.color: root.accent; border.width: 1.5
+          width: Style.space(14); height: Style.space(10)
+          Shape {
+            anchors.fill: parent
+            antialiasing: true
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+              fillColor: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.22)
+              strokeColor: "transparent"; strokeWidth: 0
+              PathSvg { path: "M0 10 L0 7 Q3.5 6 5.5 3 Q7.5 0 9.5 4 Q11.5 8 14 5 L14 10 Z" }
+            }
+            ShapePath {
+              fillColor: "transparent"
+              strokeColor: root.foreground; strokeWidth: 1.6
+              capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin
+              PathSvg { path: "M0 7 Q3.5 6 5.5 3 Q7.5 0 9.5 4 Q11.5 8 14 5" }
+            }
+          }
         }
         Text {
           text: "↓ " + root.fmtRate(root.rxRate)
@@ -153,16 +165,16 @@ Item {
         antialiasing: true
         preferredRendererType: Shape.CurveRenderer
 
-        // Download: filled area + 2px line, accent
+        // Download: filled area + 2px line
         ShapePath {
-          fillColor: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.20)
+          fillColor: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.16)
           strokeColor: "transparent"
           strokeWidth: 0
           PathSvg { path: root.areaPath(root.rxHistory, chart.width, chart.height) }
         }
         ShapePath {
           fillColor: "transparent"
-          strokeColor: root.accent
+          strokeColor: root.foreground
           strokeWidth: 2
           joinStyle: ShapePath.RoundJoin
           capStyle: ShapePath.RoundCap
@@ -171,7 +183,7 @@ Item {
         // Upload: dashed 2px line, foreground
         ShapePath {
           fillColor: "transparent"
-          strokeColor: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.85)
+          strokeColor: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.7)
           strokeWidth: 2
           strokeStyle: ShapePath.DashLine
           dashPattern: [2.5, 2]
