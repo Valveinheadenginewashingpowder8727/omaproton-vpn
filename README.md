@@ -36,7 +36,7 @@ It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
 into the CLI's own prompt, and Proton's client owns the session from there.
 
-<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel: world map, connection details, quick connect">
+<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel: world map, connection details, live traffic, quick connect">
 
 ## What you need
 
@@ -165,9 +165,18 @@ pick a country here; Proton picks the best match for you.
 Rows marked **PLUS** need a paid plan. On a free plan they fail with a clear
 "Requires a Proton VPN Plus plan" — nothing breaks.
 
+### Two tabs: Connections and Protection
+
+Under Quick Connect sit two tabs, in the same pill style as Omarchy's network
+panel. **Connections** holds everywhere you can go — recent places, the
+country and city lists, and saved profiles when they land. **Protection**
+holds everything about *how* you're protected — the Kill Switch, NetShield,
+and the settings still to come (split tunneling, auto-connect). The tab you
+pick stays until you close the panel.
+
 ### Protection
 
-<img src="docs/quick-protection.png" width="360" alt="Quick connect rows with PLUS tags, and the Kill Switch and NetShield switches">
+<img src="docs/protection.png" width="360" alt="The Protection tab: Kill Switch and NetShield switches, account, and sign out">
 
 Two switches, saved to Proton's own settings:
 
@@ -179,24 +188,26 @@ Two switches, saved to Proton's own settings:
   plan Proton only allows malware blocking; the widget steps down to that
   automatically.
 
+Below the switches, **Account** shows who's signed in and the plan, with a
+**Sign out** row — it asks for a second click within five seconds, because
+signing out also disconnects.
+
 If the VPN does drop unexpectedly, you also get a desktop notification —
 "Proton VPN disconnected — You're no longer protected." Turn notifications off
 in the widget's settings if you'd rather not.
 
-### Recent
+### Connections → Recent
 
 The last three places you connected to, pinned above the country list. Most
 people use the same two or three locations forever; this makes them one click.
 
-### Countries and cities
+### Connections → Countries and cities
 
 Below that is the full country list. **Clicking a country doesn't connect** —
 it drills into that country's cities, so you can see where you'll land before
 you commit.
 
-<img src="docs/country-list.png" width="360" alt="The country list, each row opening that country's cities">
-
-<img src="docs/city-list.png" width="360" alt="Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags">
+<img src="docs/city-list.png" width="360" alt="Connections tab with Japan drilled open — Osaka, clicked on the map, is ringed">
 
 Inside a country:
 
@@ -223,11 +234,27 @@ row.
 ### The detail rows
 
 When connected, the panel shows the server, its location, load, and protocol —
-exactly what `protonvpn status` prints. Below that: your account.
+exactly what `protonvpn status` prints.
 
 The **Server** line updates within seconds from NetworkManager even while a
 connect is still in progress. The other rows come from the CLI and can lag a
 moment behind.
+
+### Traffic
+
+<img src="docs/traffic.png" width="360" alt="Download and upload rates with the 60-second sparkline and session totals">
+
+While you're connected, under the details: download and upload rates, a
+60-second sparkline, and the session's totals and uptime. Download is the
+filled area with a solid line; upload is the dashed line. Both are drawn in
+your theme's foreground — one ink, like the rest of the panel — and told
+apart by shape, not colour, so they read the same on every theme and for
+colour-blind eyes. Hover the sparkline to read the values at any second.
+
+The numbers come from the kernel's own counters for the tunnel interface
+(`/sys/class/net/proton0/statistics`), read once a second **only while the
+panel is open** — so it's tunnel traffic specifically, and it costs nothing
+when you're not looking.
 
 ### While a connect is in progress
 
@@ -270,7 +297,9 @@ Omarchy plugin. It:
 - runs every command as an argument list, never through a shell — with one
   exception below
 - reads Proton's server cache read-only (city list, coordinates, and the map's
-  connected-city lookup all come from it), and writes exactly one file of its own
+  connected-city lookup all come from it), reads the tunnel's byte counters
+  under `/sys/class/net/` once a second while the panel is open, and writes
+  exactly one file of its own
   (`~/.local/state/omarchy-protonvpn/state.json`: recent location labels and
   whether you dismissed the Kill Switch prompt)
 
@@ -305,8 +334,9 @@ traffic beyond what the client already does on its own schedule.
 **Notifications** go through `notify-send` and contain only the connection
 state and server name.
 
-**On screen.** The panel shows your Proton account email. If you screenshot or
-screen-share the open panel, that's visible.
+**On screen.** Your Proton account email is shown only under Protection →
+Account, not in the panel's default view — but if you screenshot or
+screen-share that tab, it's visible.
 
 ## Notes
 

@@ -17,6 +17,13 @@ Panel {
   // name, a row count, and its own index property; sectionList() says which
   // ones exist right now.
   property string focusSection: "header"
+  // Which of the two tabs under Quick Connect is showing.
+  property string tab: "connections"
+  readonly property var tabs: [
+    { key: "connections", label: "Connections" },
+    { key: "protection", label: "Protection" }
+  ]
+  property int tabIndex: 0
   property int nudgeIndex: 0
   property int quickIndex: 0
   property int protectionIndex: 0
@@ -25,6 +32,12 @@ Panel {
   property int serverIndex: 0
   property bool cursorActive: false
   property string filterQuery: ""
+  // The city that was clicked on the map: its row is scrolled into view and
+  // pulses until the next click anywhere. {code, city} or null.
+  property var highlight: null
+  // Sign out is destructive (it disconnects too), so it takes two clicks
+  // within five seconds.
+  property bool signOutArmed: false
 
   // Drilled into one country's server list rather than the country list.
   readonly property bool drilled: vpn.serversCountry !== ""
@@ -82,15 +95,20 @@ Panel {
     var list = [{ name: "header", count: 1 }]
     if (nudgeVisible) list.push({ name: "nudge", count: 2 })
     list.push({ name: "quick", count: quickActions.length })
-    list.push({ name: "protection", count: 2 })
-    if (vpn.recents.length > 0) list.push({ name: "recents", count: vpn.recents.length })
-    if (drilled) list.push({ name: "servers", count: serverRowCount })
-    else if (filteredCountries.length > 0) list.push({ name: "countries", count: filteredCountries.length })
+    list.push({ name: "tabs", count: tabs.length })
+    if (tab === "protection") {
+      list.push({ name: "protection", count: 3 })
+    } else {
+      if (vpn.recents.length > 0) list.push({ name: "recents", count: vpn.recents.length })
+      if (drilled) list.push({ name: "servers", count: serverRowCount })
+      else if (filteredCountries.length > 0) list.push({ name: "countries", count: filteredCountries.length })
+    }
     return list
   }
 
   function sectionIndex(name) {
     if (name === "nudge") return nudgeIndex
+    if (name === "tabs") return tabIndex
     if (name === "quick") return quickIndex
     if (name === "protection") return protectionIndex
     if (name === "recents") return recentIndex
@@ -101,6 +119,7 @@ Panel {
 
   function setSectionIndex(name, value) {
     if (name === "nudge") nudgeIndex = value
+    else if (name === "tabs") tabIndex = value
     else if (name === "quick") quickIndex = value
     else if (name === "protection") protectionIndex = value
     else if (name === "recents") recentIndex = value
@@ -125,26 +144,67 @@ Panel {
     setSectionIndex(focusSection, Math.max(0, Math.min(count - 1, sectionIndex(focusSection))))
   }
 
+  // Put the Countries section header at the top of the view, and keep it
+  // there while the content underneath is still changing shape.
+  //
+  // A drill swaps 148 country rows for a short placeholder, then the server
+  // list arrives a beat later. Each of those changes the Flickable's content
+  // height, and the Flickable clamps contentY to the new height the moment it
+  // learns it — which is *after* any code that ran on the click. So the
+  // anchor can't be a one-shot: it stays pending, is re-applied on every
+  // contentHeight change, and is dropped the instant the person scrolls.
+  property bool anchorPending: false
+
+  function anchorCountrySection() {
+    anchorPending = true
+    applyAnchor()
+    Qt.callLater(applyAnchor)
+  }
+
+  function highlightRow() {
+    if (!highlight || !drilled || vpn.serversCountry !== highlight.code || !serverColumn) return null
+    for (var i = 0; i < vpn.servers.length; i++) {
+      if (vpn.servers[i].city === highlight.city) return serverColumn.children[i + 1] || null
+    }
+    return null
+  }
+
+  function applyAnchor() {
+    if (!anchorPending || !panelFlick || !countrySection) return
+    var target = countrySection.y
+    // A map-clicked city sits just under the country header, so both the
+    // "where am I" context and the pulsing row are on screen together.
+    var row = highlightRow()
+    if (row) target = Math.max(countrySection.y, row.mapToItem(panelFlick.contentItem, 0, 0).y - Style.space(110))
+    panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), target))
+  }
+
+  function clearHighlight() { highlight = null }
+
   function drillInto(country) {
     if (!country) return
+    // The map can be clicked from either tab; the city list lives on
+    // Connections, so go there first or the drill lands on nothing.
+    if (tab !== "connections") setTab("connections")
     cursorActive = true
     vpn.loadServers(country.code, country.name)
     focusSection = "servers"
     serverIndex = 0
-    Qt.callLater(function() {
-      if (panelFlick && countrySection) panelFlick.contentY = Math.min(root.maxScroll(), countrySection.y)
-    })
+    anchorCountrySection()
   }
 
   function drillOut() {
+    clearHighlight()
     vpn.clearServers()
     focusSection = "countries"
     serverIndex = 0
+    anchorCountrySection()
   }
 
   function moveCursor(dx, dy) {
     cursorActive = true
     ensureCursor()
+    if (dy !== 0) anchorPending = false
 
     // Horizontal moves drill in and out of a country's server list.
     if (dx !== 0) {
@@ -175,13 +235,19 @@ Panel {
   }
 
   function activateCursor() {
+    clearHighlight()
     ensureCursor()
     if (focusSection === "install") vpn.installCli()
     else if (focusSection === "signin") submitSignIn()
     else if (focusSection === "header") vpn.toggle()
     else if (focusSection === "nudge") { if (nudgeIndex === 0) vpn.toggleKillSwitch(); else vpn.dismissNudge() }
     else if (focusSection === "quick") runQuick(quickActions[quickIndex].key)
-    else if (focusSection === "protection") { if (protectionIndex === 0) vpn.toggleKillSwitch(); else vpn.toggleNetShield() }
+    else if (focusSection === "tabs") setTab(tabs[tabIndex].key)
+    else if (focusSection === "protection") {
+      if (protectionIndex === 0) vpn.toggleKillSwitch()
+      else if (protectionIndex === 1) vpn.toggleNetShield()
+      else requestSignOut()
+    }
     else if (focusSection === "recents") { vpn.connectRecent(recentIndex); showConnection() }
     // Enter on a country opens its servers rather than connecting blind —
     // the first row inside is still "Fastest in <country>", so the old
@@ -216,9 +282,28 @@ Panel {
   // After picking a place to connect to, bring the map and connection
   // details back into view — that's what the person wants to watch next.
   function showConnection() {
+    clearHighlight()
+    anchorPending = false
     cursorActive = false
     focusSection = "header"
     if (panelFlick) panelFlick.contentY = 0
+  }
+
+  function requestSignOut() {
+    if (!signOutArmed) { signOutArmed = true; signOutArm.restart(); return }
+    signOutArmed = false
+    vpn.signOut()
+  }
+
+  Timer { id: signOutArm; interval: 5000; onTriggered: root.signOutArmed = false }
+
+  function setTab(key) {
+    if (key !== "protection" && key !== "connections") return
+    clearHighlight()
+    tab = key
+    tabIndex = key === "connections" ? 0 : 1
+    anchorPending = false
+    ensureCursor()
   }
 
   function setCursor(section, index) {
@@ -252,11 +337,15 @@ Panel {
     var column = null
     if (focusSection === "nudge") column = nudgeButtons
     else if (focusSection === "quick") column = quickColumn
+    else if (focusSection === "tabs") column = tabRow
     else if (focusSection === "protection") column = protectionColumn
     else if (focusSection === "recents") column = recentColumn
     else if (focusSection === "countries") column = countryColumn
     else if (focusSection === "servers") column = serverColumn
     var i = sectionIndex(focusSection)
+    // The Protection column carries the Account header and rows after its two
+    // switches; the sign-out row is its last child.
+    if (focusSection === "protection" && i === 2 && column) i = column.children.length - 1
     if (column && i >= 0 && i < column.children.length) scrollItemIntoView(column.children[i])
   }
 
@@ -266,6 +355,8 @@ Panel {
   onOpenedChanged: {
     vpn.panelOpen = opened
     if (opened) {
+      highlight = null
+      anchorPending = false
       cursorActive = false
       filterQuery = ""
       vpn.clearServers()
@@ -286,6 +377,8 @@ Panel {
     function onSignedInChanged() { root.ensureCursor() }
     function onInstalledChanged() { root.ensureCursor() }
     function onCountriesChanged() { root.ensureCursor() }
+    // Servers arrive asynchronously after a drill; re-anchor once they do.
+    function onServersLoadingChanged() { if (!vpn.serversLoading && root.drilled) root.applyAnchor() }
   }
 
   IpcHandler {
@@ -305,6 +398,27 @@ Panel {
       return "ok"
     }
     function status(): string { return vpn.displayStatus + (vpn.displayServer !== "" ? " — " + vpn.displayServer : "") }
+    // View-only controls: they change what the panel shows, never the tunnel.
+    function tab(key: string): string { root.setTab(String(key)); return root.tab }
+    function drill(code: string): string {
+      var c = String(code || "").toUpperCase()
+      if (c === "") { root.drillOut(); return "ok" }
+      root.drillInto({ code: c, name: vpn.countryName(c) }); return "ok"
+    }
+    // "tabs" scrolls the tab strip to the top; a number is an absolute contentY.
+    function scroll(to: string): string {
+      if (!panelFlick) return "no panel"
+      var y = String(to) === "tabs" ? tabRow.y : parseFloat(to)
+      if (!isFinite(y)) return "bad value"
+      root.anchorPending = false
+      panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), y))
+      return String(Math.round(panelFlick.contentY))
+    }
+    function highlight(code: string, city: string): string {
+      root.drillInto({ code: String(code).toUpperCase(), name: vpn.countryName(code) })
+      root.highlight = { code: String(code).toUpperCase(), city: String(city) }
+      return "ok"
+    }
     // Deliberately omits the account email: anything running as this user can
     // call IPC, and the panel is the only place it should be readable.
     function debug(): string {
@@ -320,6 +434,7 @@ Panel {
         countries: vpn.countries.length,
         recents: vpn.recents.length,
         cities: vpn.cities.length,
+        traffic: { device: vpn.linkDevice, samples: vpn.rxHistory.length, rx: vpn.rxRate, tx: vpn.txRate },
         currentPlace: vpn.currentPlace ? vpn.currentPlace.city + ", " + vpn.currentPlace.code : "",
         stateLoaded: vpn.stateLoaded,
         nudgeDismissed: vpn.nudgeDismissed,
@@ -394,6 +509,8 @@ Panel {
         flickableDirection: Flickable.VerticalFlick
         interactive: contentHeight > height
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        onContentHeightChanged: root.applyAnchor()
+        onMovementStarted: root.anchorPending = false
 
         // Fixed steps instead of Flickable's momentum: one wheel notch moves
         // about a row and a half, touchpads scroll by their pixel delta, and
@@ -402,6 +519,7 @@ Panel {
           target: null
           acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
           onWheel: function(event) {
+            root.anchorPending = false
             var dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : (event.angleDelta.y / 120) * Style.space(72)
             panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), panelFlick.contentY - dy))
             event.accepted = true
@@ -448,7 +566,7 @@ Panel {
                   hasCursor: header.ringVisible
                   foreground: hero.foreground
                   onHovered: function(on) { if (on) header.focusHero() }
-                  onToggled: vpn.toggle()
+                  onToggled: { root.clearHighlight(); vpn.toggle() }
 
                   PanelToolTip {
                     visible: powerSwitch.containsMouse
@@ -471,6 +589,7 @@ Panel {
             fontFamily: root.fontFamily
             onCityClicked: function(c) {
               root.drillInto({ code: c.code, name: vpn.countryName(c.code) })
+              root.highlight = { code: c.code, city: c.city }
             }
           }
 
@@ -578,12 +697,21 @@ Panel {
             }
           }
 
-          Column {
-            visible: vpn.signedIn && vpn.account !== ""
+          // ── Traffic ─────────────────────────────────────────────────────
+          Traffic {
+            // Only over a live, settled tunnel: not while connecting or
+            // disconnecting, and gone the instant a disconnect is asked for.
+            visible: vpn.connected && vpn.linkActive && !vpn.busy && vpn.rxHistory.length > 0
             width: parent.width
-            spacing: Style.spacing.labelGap
-            InfoPair { label: "Account"; value: vpn.account }
-            InfoPair { visible: vpn.plan !== ""; label: "Plan"; value: vpn.plan }
+            rxHistory: vpn.rxHistory
+            txHistory: vpn.txHistory
+            rxRate: vpn.rxRate
+            txRate: vpn.txRate
+            sessionRx: vpn.sessionRx
+            sessionTx: vpn.sessionTx
+            uptimeSec: vpn.uptimeSec
+            foreground: root.foreground
+            fontFamily: root.fontFamily
           }
 
           // ── Kill-switch nudge ───────────────────────────────────────────
@@ -690,17 +818,33 @@ Panel {
             foreground: root.foreground
           }
 
-          // ── Protection ──────────────────────────────────────────────────
-          Column {
+          // ── Tabs ────────────────────────────────────────────────────────
+          // Same pill strip as the network panel's DNS provider row.
+          Row {
+            id: tabRow
             visible: vpn.signedIn
             width: parent.width
-            spacing: Style.space(10)
+            spacing: Style.space(6)
+            readonly property real cellWidth: (width - spacing * (root.tabs.length - 1)) / root.tabs.length
 
-            PanelSectionHeader {
-              text: "PROTECTION"
-              foreground: root.foreground
-              fontFamily: root.fontFamily
+            Repeater {
+              model: root.tabs
+              TabPill {
+                required property var modelData
+                required property int index
+                width: tabRow.cellWidth
+                tabKey: modelData.key
+                text: modelData.label
+                tabIdx: index
+              }
             }
+          }
+
+          // ── Protection ──────────────────────────────────────────────────
+          Column {
+            visible: vpn.signedIn && root.tab === "protection"
+            width: parent.width
+            spacing: Style.space(10)
 
             Column {
               id: protectionColumn
@@ -717,7 +861,7 @@ Panel {
                 foreground: root.foreground
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 0) }
-                onClicked: vpn.toggleKillSwitch()
+                onClicked: { root.clearHighlight(); vpn.toggleKillSwitch() }
               }
 
               Toggle {
@@ -736,19 +880,40 @@ Panel {
                 foreground: root.foreground
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 1) }
-                onClicked: vpn.toggleNetShield()
+                onClicked: { root.clearHighlight(); vpn.toggleNetShield() }
+              }
+
+              // ── Account ─────────────────────────────────────────────────
+              PanelSectionHeader {
+                text: "ACCOUNT"
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                topPadding: Style.space(10)
+              }
+
+              Column {
+                width: parent.width
+                spacing: Style.spacing.labelGap
+                InfoPair { label: "Signed in as"; value: vpn.account }
+                InfoPair { visible: vpn.plan !== ""; label: "Plan"; value: vpn.plan }
+              }
+
+              ActionRow {
+                width: parent.width
+                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 2
+                icon: "󰍃"
+                title: root.signOutArmed ? "Click again to sign out" : "Sign out"
+                subtitle: root.signOutArmed ? "Disconnects and clears the session on this computer" : "You'll need your password and 2FA to sign back in"
+                enabled: !vpn.busy
+                onEntered: root.setCursor("protection", 2)
+                onClicked: root.requestSignOut()
               }
             }
           }
 
-          PanelSeparator {
-            visible: vpn.signedIn && vpn.recents.length > 0
-            foreground: root.foreground
-          }
-
           // ── Recent ──────────────────────────────────────────────────────
           Column {
-            visible: vpn.signedIn && vpn.recents.length > 0
+            visible: vpn.signedIn && root.tab === "connections" && vpn.recents.length > 0
             width: parent.width
             spacing: Style.space(10)
 
@@ -780,15 +945,10 @@ Panel {
             }
           }
 
-          PanelSeparator {
-            visible: vpn.signedIn
-            foreground: root.foreground
-          }
-
           // ── Countries / cities ──────────────────────────────────────────
           Column {
             id: countrySection
-            visible: vpn.signedIn
+            visible: vpn.signedIn && root.tab === "connections"
             width: parent.width
             spacing: Style.space(10)
 
@@ -917,7 +1077,7 @@ Panel {
       cursorShape: actionRow.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
       enabled: actionRow.enabled
       onEntered: actionRow.entered()
-      onClicked: actionRow.clicked()
+      onClicked: { root.clearHighlight(); actionRow.clicked() }
     }
 
     RowLayout {
@@ -973,6 +1133,24 @@ Panel {
     }
   }
 
+  component TabPill: Button {
+    id: pill
+    property string tabKey: ""
+    property int tabIdx: 0
+
+    fontSize: Style.font.bodySmall
+    foreground: root.foreground
+    fontFamily: root.fontFamily
+    horizontalPadding: Style.spacing.controlPaddingX
+    verticalPadding: Style.spacing.controlPaddingY + Style.space(2)
+    bordered: true
+    active: root.tab === tabKey
+    hasCursor: root.cursorActive && root.focusSection === "tabs" && root.tabIndex === tabIdx
+
+    onHovered: function(isHovered) { if (isHovered) root.setCursor("tabs", pill.tabIdx) }
+    onClicked: root.setTab(tabKey)   // setTab clears the highlight
+  }
+
   component CountryRow: CursorSurface {
     id: countryRow
     property var country: null
@@ -992,7 +1170,7 @@ Panel {
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("countries", countryRow.rowIndex)
-      onClicked: root.drillInto(countryRow.country)
+      onClicked: { root.clearHighlight(); root.drillInto(countryRow.country) }
     }
 
     RowLayout {
@@ -1074,7 +1252,7 @@ Panel {
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("servers", 0)
-      onClicked: root.activateServerRow(0)
+      onClicked: { root.clearHighlight(); root.activateServerRow(0) }
     }
 
     RowLayout {
@@ -1126,13 +1304,32 @@ Panel {
     foreground: root.foreground
     implicitHeight: serverContent.implicitHeight + Style.spacing.rowPaddingX
 
+    // The city that was clicked on the map breathes until the next click.
+    readonly property bool pulsing: root.highlight !== null && server
+                                    && root.highlight.code === vpn.serversCountry
+                                    && root.highlight.city === server.city
+    Rectangle {
+      anchors.fill: parent
+      radius: Style.cornerRadius
+      color: "transparent"
+      border.color: root.foreground
+      border.width: 1.5
+      visible: serverRow.pulsing
+      SequentialAnimation on opacity {
+        running: serverRow.pulsing
+        loops: Animation.Infinite
+        NumberAnimation { from: 0.25; to: 0.95; duration: 700; easing.type: Easing.InOutSine }
+        NumberAnimation { from: 0.95; to: 0.25; duration: 700; easing.type: Easing.InOutSine }
+      }
+    }
+
     MouseArea {
       anchors.fill: parent
       hoverEnabled: true
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("servers", serverRow.rowIndex)
-      onClicked: if (serverRow.server) root.activateServerRow(serverRow.rowIndex)
+      onClicked: { root.clearHighlight(); if (serverRow.server) root.activateServerRow(serverRow.rowIndex) }
     }
 
     RowLayout {
