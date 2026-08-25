@@ -9,23 +9,28 @@ terminal. Click the Proton mark and you're protected.
 
 ## Why "Oma"
 
-Because it isn't a VPN app that happens to run on Omarchy — it's an Omarchy
-plugin through and through:
+Because it doesn't look like a VPN app that landed on your desktop. It looks
+like Omarchy — because it *is* Omarchy, all the way down:
 
-- **Built on Quattro's own panel kit.** The hero, switches, rows, and keyboard
-  cursor are the same components Omarchy's built-in Bluetooth, Wi-Fi, and
-  Tailscale panels use, so it behaves exactly like the panels next to it.
-- **Drawn from your theme.** Every colour, the font, the corner radius, and the
-  Proton mark itself come from Omarchy's theme tokens. Switch from Tokyo Night to
-  Catppuccin Latte and the widget follows on the spot — nothing is hard-coded.
-- **Installed the Omarchy way.** `omarchy plugin add` to install, `omarchy plugin
-  update` to update, `omarchy plugin remove` to remove. The CLI install goes
-  through `omarchy install app`, so the sudo prompt lives in Omarchy's own
-  floating terminal.
-- **A map, without a map service.** Every Proton city on a bundled world
-  outline, the connected one lit — all from files already on disk.
-- **Fast enough for a bar.** Tunnel state comes from NetworkManager in ~10 ms, so
-  the icon reacts in seconds — the Python CLI is only asked for the detail rows.
+- **It wears your theme.** Every colour, the font, the corner radius, the
+  switches, even the Proton mark and the world map are drawn from Omarchy's
+  theme tokens. Switch from Tokyo Night to Catppuccin Latte and the whole
+  panel — coastlines, city dots, the lit city — follows on the spot. Nothing is
+  a pasted-in bitmap; nothing is hard-coded.
+- **It feels like the panels next to it.** The hero, the power switch, the
+  rows, the hover rings, the keyboard cursor — all the same Quattro components
+  your Wi-Fi, Bluetooth, and Tailscale panels are built from. Arrow keys walk
+  it, `Esc` backs out, `/` finds a country. You already know how to use it.
+- **It stays out of the terminal.** Install, sign in, Kill Switch, connect,
+  pick a city on a map: every step is a click in the panel. The only terminal
+  you'll ever see is Proton's own password prompt, in Omarchy's floating
+  window, and it closes itself.
+- **A map, without a map service.** Every Proton city on a world outline, the
+  connected one lit and pulsing, hover for load, click to go — all from files
+  already on disk. No tiles, no geocoding, no requests.
+- **Fast enough to live in a bar.** Tunnel state comes from NetworkManager in
+  about ten milliseconds, so the icon reacts in seconds; the Python CLI is only
+  asked for the detail rows.
 
 It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
