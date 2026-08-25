@@ -8,7 +8,7 @@ It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — sign-in happens in the CLI's own
 interactive prompt, and Proton's client owns the session from there.
 
-![The Proton VPN panel open in the Omarchy bar](preview.png)
+<img src="preview.png" width="360" alt="The Proton VPN panel open in the Omarchy bar">
 
 ## Requirements
 
@@ -85,7 +85,7 @@ connected; dimmed means disconnected, signed out, or the CLI isn't installed.
 | Right-click | Toggle — connect to the fastest server, or disconnect |
 | Middle-click | Force a status refresh |
 
-![Typing in the country filter narrows the list](docs/country-filter.png)
+<img src="docs/country-filter.png" width="360" alt="Typing in the country filter narrows the list">
 
 The panel is keyboard-driven too: arrow keys move, `Enter` activates, `→` opens
 a country's city list, `←` backs out, `Esc` backs out of a city list or closes
@@ -121,7 +121,7 @@ Below quick connect is the full country list. **Clicking a country doesn't
 connect** — it drills into that country's cities, so you can see where you'll
 land before you commit.
 
-![Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags](docs/city-list.png)
+<img src="docs/city-list.png" width="360" alt="Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags">
 
 Inside a country:
 
