@@ -1,19 +1,33 @@
 # OmaProton VPN
 
-All of Proton VPN in one simple bar widget for [Omarchy Quattro](https://omarchy.org).
-Install the CLI, sign in, connect, pick a city, switch on the Kill Switch — every
-step happens in the panel, and none of them need a terminal. Click the Proton mark,
-and you're protected.
+**Proton VPN, built for Omarchy.** All of Proton in one bar widget for
+[Omarchy Quattro](https://omarchy.org): install the CLI, sign in, connect, pick a
+city, switch on the Kill Switch — every step in the panel, none of them in a
+terminal. Click the Proton mark and you're protected.
 
-It's drawn entirely from Omarchy's theme tokens — colours, font, corners, the
-Proton mark itself — so it looks native in every theme, light or dark, and
-follows along the moment you switch.
+<img src="preview.png" width="720" alt="OmaProton VPN — Proton VPN, built for Omarchy">
+
+## Why "Oma"
+
+Because it isn't a VPN app that happens to run on Omarchy — it's an Omarchy
+plugin through and through:
+
+- **Built on Quattro's own panel kit.** The hero, switches, rows, and keyboard
+  cursor are the same components Omarchy's built-in Bluetooth, Wi-Fi, and
+  Tailscale panels use, so it behaves exactly like the panels next to it.
+- **Drawn from your theme.** Every colour, the font, the corner radius, and the
+  Proton mark itself come from Omarchy's theme tokens. Switch from Tokyo Night to
+  Catppuccin Latte and the widget follows on the spot — nothing is hard-coded.
+- **Installed the Omarchy way.** `omarchy plugin add` to install, `omarchy plugin
+  update` to update, `omarchy plugin remove` to remove. The CLI install goes
+  through `omarchy install app`, so the sudo prompt lives in Omarchy's own
+  floating terminal.
+- **Fast enough for a bar.** Tunnel state comes from NetworkManager in ~10 ms, so
+  the icon reacts in seconds — the Python CLI is only asked for the detail rows.
 
 It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
 into the CLI's own prompt, and Proton's client owns the session from there.
-
-<img src="preview.png" width="720" alt="OmaProton VPN — Proton VPN without the terminal">
 
 <img src="docs/panel.png" width="360" alt="The OmaProton VPN panel open in the Omarchy bar">
 
