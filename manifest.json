@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "io.github.grichard99.protonvpn",
   "name": "Proton VPN",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "grichard99",
   "license": "MIT",
-  "description": "Proton VPN status, quick connect, and country switching in the Omarchy bar.",
+  "description": "Proton VPN in the Omarchy bar: install, sign in, one-click connect, pick a city, and switch on the Kill Switch \u2014 no terminal needed.",
   "kinds": [
     "bar-widget"
   ],
@@ -14,13 +14,14 @@
   },
   "barWidget": {
     "displayName": "Proton VPN",
-    "description": "Toggle Proton VPN, quick-connect by feature, and pick a country.",
+    "description": "Toggle Proton VPN, quick-connect by feature, pick a country or city, and manage Kill Switch and NetShield.",
     "category": "Network",
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
       "refreshIntervalSec": 30,
-      "watchIntervalSec": 4
+      "watchIntervalSec": 4,
+      "notifications": "on"
     },
     "schema": [
       {
@@ -40,6 +41,22 @@
         "max": 60,
         "step": 1,
         "defaultValue": 4
+      },
+      {
+        "key": "notifications",
+        "type": "enum",
+        "label": "Desktop notifications",
+        "options": [
+          {
+            "value": "on",
+            "label": "On"
+          },
+          {
+            "value": "off",
+            "label": "Off"
+          }
+        ],
+        "defaultValue": "on"
       }
     ]
   }

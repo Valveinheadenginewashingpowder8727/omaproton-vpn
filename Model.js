@@ -170,3 +170,42 @@ function elide(text, max) {
   var limit = max || 140
   return value.length > limit ? value.substring(0, limit - 3) + "…" : value
 }
+
+// `protonvpn config list` -> two-column table:
+//
+//   Setting                  Value
+//   -----------------------  ------------
+//   kill-switch              off
+//
+// Rows are "name<2+ spaces>value"; header and rule are skipped by shape.
+function parseConfig(raw) {
+  var lines = stripAnsi(raw).split("\n")
+  var out = {}
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].match(/^\s*([a-z][a-z0-9-]*)\s{2,}(\S+)\s*$/i)
+    if (!m) continue
+    var key = m[1].toLowerCase()
+    if (key === "setting") continue
+    out[key] = m[2].toLowerCase()
+  }
+  return out
+}
+
+// Proton usernames are an email or a bare account name. Anything outside this
+// set is refused outright rather than escaped — it has no business in a
+// username, and refusing is simpler to reason about than quoting.
+function validUsername(text) {
+  return /^[A-Za-z0-9._+@-]{1,254}$/.test(String(text || "").trim())
+}
+
+// Single-quote for POSIX sh. The terminal launcher joins its arguments into
+// one `bash -c` string, so this is the only path where a value has to cross
+// a shell boundary; validUsername() already narrowed it to a safe alphabet.
+function shellQuote(text) {
+  return "'" + String(text).replace(/'/g, "'\\''") + "'"
+}
+
+// The CLI's wording when a feature needs a paid plan.
+function isPlanError(text) {
+  return /upgrade|plus plan|paid plan|subscription|not available (?:on|for|with) (?:your|the free|free)|free (?:plan|tier|users?)/i.test(String(text || ""))
+}

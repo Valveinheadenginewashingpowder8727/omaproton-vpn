@@ -1,30 +1,22 @@
 # Proton VPN for Omarchy
 
 A bar widget for [Omarchy Quattro](https://omarchy.org) that puts Proton VPN in
-your status bar: connection state at a glance, one-click connect and disconnect,
-quick-connect by feature, and a country and city picker.
+your status bar — and gets you from nothing to protected without opening a
+terminal yourself. Install the CLI from the panel, sign in from the panel, turn
+on the Kill Switch from the panel, then connect with one click or pick a city.
 
 It drives the official `protonvpn` CLI. No API keys, no tokens, and no
-credentials are stored by this plugin — sign-in happens in the CLI's own
-interactive prompt, and Proton's client owns the session from there.
+credentials are stored by this plugin — your password and 2FA code go straight
+into the CLI's own prompt, and Proton's client owns the session from there.
 
 <img src="preview.png" width="360" alt="The Proton VPN panel open in the Omarchy bar">
 
-## Requirements
+## What you need
 
-| Dependency | Where it comes from | Why |
-| --- | --- | --- |
-| Omarchy Quattro | — | Host shell (Quickshell) |
-| `proton-vpn-cli` | Arch `extra` repo | Every VPN action |
-| `python3` | Base system | Reads the client's cached server list |
-| `nmcli` (NetworkManager) | Base system | Fast tunnel-state detection |
-| `omarchy-launch-floating-terminal-with-presentation` | Omarchy | Interactive sign-in |
+- Omarchy Quattro
+- A Proton account — a free one works; sign up at [proton.me](https://proton.me)
 
-Install the CLI from the official repository, not the AUR:
-
-```bash
-omarchy pkg add proton-vpn-cli      # or: sudo pacman -S proton-vpn-cli
-```
+That's it. The panel installs the Proton VPN CLI for you if it isn't there.
 
 ## Install
 
@@ -32,23 +24,36 @@ omarchy pkg add proton-vpn-cli      # or: sudo pacman -S proton-vpn-cli
 omarchy plugin add https://github.com/grichard99/omarchy-protonvpn-plugin --enable
 ```
 
-That clones the plugin into `~/.config/omarchy/plugins/` and enables it. If you
-prefer to place it yourself, drop `--enable` and run:
+Then click the Proton mark in your bar. The panel walks you through the rest:
+
+1. **Install Proton VPN CLI** — one click; Omarchy opens a terminal and handles
+   the install (that terminal asks for your password, since it's a system
+   package).
+2. **Sign in** — type your Proton username or email in the panel and press
+   Enter. A terminal opens for your password and 2FA code, then closes.
+3. **Turn on the Kill Switch** — the panel offers this once. Say yes.
+4. **Connect** — the switch at the top, or pick a city below.
+
+If you'd rather place the widget yourself, drop `--enable` and run:
 
 ```bash
 omarchy plugin enable io.github.grichard99.protonvpn right
 ```
 
-Then sign in — click the widget and follow the terminal prompt, or run:
+### Already have the Proton VPN desktop app?
+
+The desktop app and the CLI can't run at the same time. The panel warns you if
+the app is installed. Quit it before connecting, or remove it:
 
 ```bash
-protonvpn signin <YOUR_PROTON_USERNAME>
+omarchy pkg drop proton-vpn-gtk-app
 ```
 
-The CLI asks for your password and then a TOTP token. **The CLI supports TOTP
-two-factor only**; if your account uses a FIDO2 security key, sign in once with
-the Proton VPN GTK app instead — this widget reads the session the client
-creates either way.
+### Two-factor with a security key?
+
+The CLI supports TOTP (authenticator-app codes) only. If your account uses a
+FIDO2 key, sign in once with the desktop app instead — this widget reads the
+session either way.
 
 ## Update
 
@@ -63,21 +68,23 @@ omarchy plugin remove io.github.grichard99.protonvpn
 ```
 
 That disables the widget, removes it from your bar, and deletes the plugin
-folder. It does not touch your Proton VPN session, settings, or any active
-tunnel — disconnect and sign out from the widget or the CLI first if you want
-those gone too:
+folder. It leaves your Proton VPN session, settings, and any active tunnel
+alone — disconnect and sign out first if you want those gone too:
 
 ```bash
 protonvpn disconnect
 protonvpn signout
 ```
 
+The widget also keeps a small file of your recent locations at
+`~/.local/state/omarchy-protonvpn/state.json`; delete it if you like.
+
 ## How to use it
 
 ### The bar icon
 
 The Proton mark sits in your bar in the theme's foreground colour. Solid means
-connected; dimmed means disconnected, signed out, or the CLI isn't installed.
+protected; dimmed means not.
 
 | Action | What it does |
 | --- | --- |
@@ -85,12 +92,12 @@ connected; dimmed means disconnected, signed out, or the CLI isn't installed.
 | Right-click | Toggle — connect to the fastest server, or disconnect |
 | Middle-click | Force a status refresh |
 
-<img src="docs/country-filter.png" width="360" alt="Typing in the country filter narrows the list">
+The panel is keyboard-driven too: arrow keys move through every section, `Enter`
+activates, `→` opens a country's city list, `←` backs out, `Esc` backs out of a
+city list or closes the panel. `/` jumps to the country filter, `c` connects to
+the fastest server, `d` disconnects.
 
-The panel is keyboard-driven too: arrow keys move, `Enter` activates, `→` opens
-a country's city list, `←` backs out, `Esc` backs out of a city list or closes
-the panel. `/` jumps to the country filter, `c` connects to the fastest server,
-`d` disconnects.
+<img src="docs/country-filter.png" width="360" alt="Typing in the country filter narrows the list">
 
 ### The power switch
 
@@ -112,14 +119,35 @@ pick a country here; Proton picks the best match for you.
 | **Secure Core** | The fastest Secure Core server. Your traffic enters through a hardened server in Switzerland, Iceland, or Sweden and *then* exits through the country you appear from — so a compromised exit server never sees your real IP. Slower, because it's two hops. |
 | **Tor** | The fastest Tor-over-VPN server. Your traffic goes VPN first, then into the Tor network, so you can reach `.onion` sites from a normal browser. Noticeably slower. |
 
-Secure Core, Tor, and P2P are paid-plan features. On a free plan they'll fail
-with a message from the CLI; nothing breaks.
+Rows marked **PLUS** need a paid plan. On a free plan they fail with a clear
+"Requires a Proton VPN Plus plan" — nothing breaks.
+
+### Protection
+
+Two switches, saved to Proton's own settings:
+
+- **Kill Switch** — if the VPN drops, your internet is blocked until it's back.
+  Without this, a dropped tunnel silently falls back to your plain connection
+  and all you'd see is the icon dimming. The CLI ships with it **off**, which is
+  why the panel offers to turn it on the first time you sign in.
+- **NetShield** — blocks malware, ads, and trackers at the DNS level. On a free
+  plan Proton only allows malware blocking; the widget steps down to that
+  automatically.
+
+If the VPN does drop unexpectedly, you also get a desktop notification —
+"Proton VPN disconnected — You're no longer protected." Turn notifications off
+in the widget's settings if you'd rather not.
+
+### Recent
+
+The last three places you connected to, pinned above the country list. Most
+people use the same two or three locations forever; this makes them one click.
 
 ### Countries and cities
 
-Below quick connect is the full country list. **Clicking a country doesn't
-connect** — it drills into that country's cities, so you can see where you'll
-land before you commit.
+Below that is the full country list. **Clicking a country doesn't connect** —
+it drills into that country's cities, so you can see where you'll land before
+you commit.
 
 <img src="docs/city-list.png" width="360" alt="Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags">
 
@@ -128,8 +156,8 @@ Inside a country:
 - **"Fastest in &lt;country&gt;"** is always the first row. It lets Proton choose
   any server in that country, which is the same as `protonvpn connect --country`.
 - **Every row below is one city**, showing the best server there right now with
-  its current load and any feature tags (P2P, Tor, Streaming). Cities are
-  ordered by Proton's own speed score, best first.
+  its current load and any tags — **Free** for free-plan servers, plus P2P, Tor,
+  or Streaming. Cities are ordered by Proton's own speed score, best first.
 
 The widget shows one row per city rather than one per server on purpose. Large
 countries have thousands of servers and the nearest city would monopolise the
@@ -148,7 +176,7 @@ row.
 ### The detail rows
 
 When connected, the panel shows the server, its location, load, and protocol —
-exactly what `protonvpn status` prints. Below that: your account and plan.
+exactly what `protonvpn status` prints. Below that: your account.
 
 The **Server** line updates within seconds from NetworkManager even while a
 connect is still in progress. The other rows come from the CLI and can lag a
@@ -158,37 +186,20 @@ moment behind.
 
 `protonvpn connect` blocks for anywhere from a few seconds to a minute. The
 widget doesn't freeze — it shows "Connecting to …" and optimistically flips the
-switch on. If the connect fails, the switch drops back and the CLI's error is
-shown under the header for a few seconds.
+switch on. If the connect fails, the switch drops back and the reason is shown
+under the header for a few seconds.
 
 ## Settings
 
 Configurable from Omarchy's widget settings:
 
-| Setting | Default | Range | What it controls |
-| --- | --- | --- | --- |
-| Status refresh interval | 30 s | 5–3600 s | How often `protonvpn status` runs for the detail rows while the panel is closed. Open panel: every 5 s. |
-| Link watch interval | 4 s | 2–60 s | How often `nmcli` is polled for the bar icon. |
+| Setting | Default | What it controls |
+| --- | --- | --- |
+| Desktop notifications | On | "Protected" on connect; "disconnected" if the tunnel drops unexpectedly. |
+| Status refresh interval | 30 s | How often `protonvpn status` runs for the detail rows while the panel is closed. Open panel: every 5 s. |
+| Link watch interval | 4 s | How often `nmcli` is polled for the bar icon. |
 
-## Recommended CLI settings
-
-None of these are the widget's job, but a VPN widget that looks "connected" is
-only as trustworthy as the tunnel underneath it. Worth running once:
-
-```bash
-protonvpn config set kill-switch standard
-```
-
-With the kill switch **off** (the CLI's default), a dropped tunnel silently
-falls back to your plain connection and the bar icon just dims. With
-`standard`, traffic is blocked instead until you reconnect or deliberately
-disconnect.
-
-```bash
-protonvpn config set netshield malware-ads-trackers   # paid plans
-```
-
-**Protocol.** The protocol isn't settable through `protonvpn config`; it lives in
+**Protocol.** The one Proton setting the CLI doesn't expose. It lives in
 `~/.config/Proton/VPN/settings.json`:
 
 ```json
@@ -206,15 +217,27 @@ Omarchy plugin. It:
 
 - stores no credentials, tokens, or account data
 - makes no network requests of its own
-- writes nothing outside its own folder, and reads Proton's cache read-only
-- shells out only to `protonvpn`, `nmcli`, `python3`, and Omarchy's own
-  terminal launcher — always as an argument list, never through a shell
-- never uses `sudo` and never downloads or executes remote code
+- never uses `sudo` — the CLI install runs through Omarchy's own installer in a
+  terminal that owns the password prompt
+- never downloads or executes remote code
+- runs every command as an argument list, never through a shell — with one
+  exception below
+- reads Proton's server cache read-only, and writes exactly one file of its own
+  (`~/.local/state/omarchy-protonvpn/state.json`: recent location labels and
+  whether you dismissed the Kill Switch prompt)
 
-**Sign-in.** Credentials go straight to the `protonvpn` CLI's own prompt in a
-terminal; this plugin never sees your password or TOTP. The username is read
-with `read -rp` inside that terminal and passed to the CLI as an argument, so
-it doesn't land in your shell history.
+**Sign-in.** Your password and 2FA code go straight to the `protonvpn` CLI's
+own prompt in a terminal; this plugin never sees them. The username you type in
+the panel is the one value that has to cross a shell boundary (Omarchy's
+terminal launcher takes a command string). It's checked against a strict
+allow-list — letters, digits, and `. _ + @ -` only — and single-quoted before
+it goes anywhere; anything else is refused with a message, not escaped. The
+terminal runs non-interactively, so nothing lands in your shell history.
+
+**Settings writes.** The Kill Switch and NetShield switches run
+`protonvpn config set`. The widget will only ever pass `kill-switch` ∈
+`{off, standard}` and `netshield` ∈ `{off, malware-only, malware-ads-trackers}`;
+no other key or value can reach the CLI from this code.
 
 **What's visible to other processes.** Omarchy exposes every plugin over a
 Quickshell IPC socket under `/run/user/<uid>/`, which only your own user (and
@@ -230,6 +253,9 @@ client for its server list, which the client refreshes from Proton's API only
 when its own cache has expired — server loads every ~15 minutes, the full list
 every ~3 hours — and only while connected. The widget's polling doesn't add API
 traffic beyond what the client already does on its own schedule.
+
+**Notifications** go through `notify-send` and contain only the connection
+state and server name.
 
 **On screen.** The panel shows your Proton account email. If you screenshot or
 screen-share the open panel, that's visible.
