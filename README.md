@@ -321,8 +321,10 @@ row per city.
 
 ## Credits
 
-The world outline is Natural Earth's 1:110m land data (public domain),
-projected once into `World.js`. The Proton VPN mark is drawn from the [Simple Icons](https://simpleicons.org)
+The world outline is [Natural Earth](https://www.naturalearthdata.com/) 1:110m
+land data — free, public-domain map data made by volunteers, and the reason this
+widget can draw a map without calling anyone. Projected once into `World.js`.
+The Proton VPN mark is drawn from the [Simple Icons](https://simpleicons.org)
 path (CC0) and recoloured to the active theme, so it isn't a scaled bitmap.
 Proton and Proton VPN are trademarks of Proton AG. This is an unofficial
 community plugin and is not affiliated with or endorsed by Proton AG.
