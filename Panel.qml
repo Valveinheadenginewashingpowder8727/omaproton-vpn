@@ -20,10 +20,10 @@ Panel {
   // Which of the two tabs under Quick Connect is showing.
   property string tab: "connections"
   readonly property var tabs: [
-    { key: "protection", label: "Protection" },
-    { key: "connections", label: "Connections" }
+    { key: "connections", label: "Connections" },
+    { key: "protection", label: "Protection" }
   ]
-  property int tabIndex: 1
+  property int tabIndex: 0
   property int nudgeIndex: 0
   property int quickIndex: 0
   property int protectionIndex: 0
@@ -261,7 +261,7 @@ Panel {
   function setTab(key) {
     if (key !== "protection" && key !== "connections") return
     tab = key
-    tabIndex = key === "protection" ? 0 : 1
+    tabIndex = key === "connections" ? 0 : 1
     anchorPending = false
     ensureCursor()
   }

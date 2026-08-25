@@ -165,13 +165,13 @@ pick a country here; Proton picks the best match for you.
 Rows marked **PLUS** need a paid plan. On a free plan they fail with a clear
 "Requires a Proton VPN Plus plan" — nothing breaks.
 
-### Two tabs: Protection and Connections
+### Two tabs: Connections and Protection
 
 Under Quick Connect sit two tabs, in the same pill style as Omarchy's network
-panel. **Protection** holds everything about *how* you're protected — the Kill
-Switch, NetShield, and the settings still to come (split tunneling,
-auto-connect). **Connections** holds everywhere you can go — recent places,
-the country and city lists, and saved profiles when they land. The tab you
+panel. **Connections** holds everywhere you can go — recent places, the
+country and city lists, and saved profiles when they land. **Protection**
+holds everything about *how* you're protected — the Kill Switch, NetShield,
+and the settings still to come (split tunneling, auto-connect). The tab you
 pick stays until you close the panel.
 
 ### Protection
