@@ -38,5 +38,7 @@ running as you. Its job is to never make that boundary worse.
 
 ## Single-author policy
 
-Only the maintainer commits to this repository; pull requests are not
-accepted. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Only the maintainer commits to this repository. Pull requests are closed
+rather than merged, as a defence against the AI-generated and supply-chain
+pull requests that public projects now attract; findings in them are re-filed
+as issues and credited. See [CONTRIBUTING.md](CONTRIBUTING.md).

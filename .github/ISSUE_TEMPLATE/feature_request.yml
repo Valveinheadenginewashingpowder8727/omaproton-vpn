@@ -19,5 +19,5 @@ body:
     attributes:
       label: Policy
       options:
-        - label: I understand this repository has a single author and doesn't accept pull requests — this is a request, not an offer to implement it.
+        - label: I understand this repository has a single author and closes pull requests for security reasons — this is a request, not an offer to implement it.
           required: true

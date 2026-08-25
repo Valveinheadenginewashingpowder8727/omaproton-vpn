@@ -10,9 +10,14 @@ every line in it is written and reviewed by one person, and only that person
 can commit:
 
 - There are no collaborators and there never will be.
-- **Pull requests are not accepted and will be closed unread**, whatever they
-  contain. This isn't a judgement on your code — it's so that nobody, ever,
-  has to wonder whether a stranger's change made it into a VPN widget.
+- **Pull requests are not merged.** They are closed as a matter of policy,
+  with a note pointing here. This is a security decision, not a judgement on
+  your code: open-source projects now receive a steady stream of
+  AI-generated pull requests, some of them plausible-looking supply-chain
+  attempts, and the only review process that reliably keeps that out of a
+  VPN widget is one where a single accountable person writes every line. If
+  a PR describes a real bug or a good idea, it will be re-filed as an issue
+  and credited to you when it ships.
 - GitHub Actions are disabled on this repository, so nothing runs on a PR.
 
 ## What is welcome
