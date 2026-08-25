@@ -162,6 +162,9 @@ Panel {
 
   function drillInto(country) {
     if (!country) return
+    // The map can be clicked from either tab; the city list lives on
+    // Connections, so go there first or the drill lands on nothing.
+    if (tab !== "connections") setTab("connections")
     cursorActive = true
     vpn.loadServers(country.code, country.name)
     focusSection = "servers"
