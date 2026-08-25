@@ -1,0 +1,28 @@
+name: Bug report
+description: Something didn't work, looked wrong, or was confusing.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you saw instead. Screenshots welcome — the panel shows your Proton account email, so crop it out.
+    validations:
+      required: true
+  - type: textarea
+    id: debug
+    attributes:
+      label: Widget state
+      description: "Paste the output of: `omarchy-shell io.github.grichard99.omaproton-vpn debug` — it contains no account details."
+      render: json
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: "`omarchy version`, and the plugin version from `omarchy plugin list --json`"
+      placeholder: "Omarchy 4.x, OmaProton VPN 1.2.1, proton-vpn-cli 1.0.3"
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Does it happen in another Omarchy theme too?
+      options: ["Didn't try", "Yes", "No — only this theme"]
