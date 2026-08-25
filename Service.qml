@@ -69,6 +69,23 @@ Item {
   property var currentPlace: null
   property string _locatePending: ""
 
+  // Tunnel throughput, from the kernel's own counters for the tunnel
+  // interface (/sys/class/net/<dev>/statistics). Sampled once a second, only
+  // while the panel is open and a tunnel is up — zero cost otherwise.
+  property string linkDevice: ""
+  property var rxHistory: []
+  property var txHistory: []
+  property real rxRate: 0
+  property real txRate: 0
+  property real sessionRx: 0
+  property real sessionTx: 0
+  property int uptimeSec: 0
+  property real _lastRx: -1
+  property real _lastTx: -1
+  property real _lastSampleMs: 0
+  property real _linkUpMs: 0
+  readonly property int trafficSamples: 60
+
   // `protonvpn config list`, keyed by setting name.
   property var config: ({})
   property bool configLoaded: false
@@ -369,6 +386,41 @@ Item {
     actionProcess.running = true
   }
 
+  function trafficReset() {
+    rxHistory = []; txHistory = []
+    rxRate = 0; txRate = 0
+    sessionRx = 0; sessionTx = 0
+    uptimeSec = 0
+    _lastRx = -1; _lastTx = -1; _lastSampleMs = 0
+    _linkUpMs = Date.now()
+  }
+
+  // sysfs files report a size of 0, so FileView reads them as empty; `cat`
+  // reads until EOF and costs about a millisecond once a second.
+  function trafficSample() {
+    if (trafficProcess.running || linkDevice === "") return
+    var base = "/sys/class/net/" + linkDevice + "/statistics/"
+    trafficProcess.command = ["cat", base + "rx_bytes", base + "tx_bytes"]
+    trafficProcess.running = true
+  }
+
+  function trafficApply(text) {
+    var parts = String(text || "").trim().split(/\s+/)
+    var rx = parseFloat(parts[0]), tx = parseFloat(parts[1])
+    if (!isFinite(rx) || !isFinite(tx)) return
+    var now = Date.now()
+    if (_lastRx >= 0 && _lastSampleMs > 0) {
+      var dt = Math.max(0.25, (now - _lastSampleMs) / 1000)
+      var drx = Math.max(0, rx - _lastRx), dtx = Math.max(0, tx - _lastTx)
+      rxRate = drx / dt; txRate = dtx / dt
+      sessionRx += drx; sessionTx += dtx
+      var h = rxHistory.slice(); h.push(rxRate); if (h.length > trafficSamples) h.shift(); rxHistory = h
+      var g = txHistory.slice(); g.push(txRate); if (g.length > trafficSamples) g.shift(); txHistory = g
+    }
+    _lastRx = rx; _lastTx = tx; _lastSampleMs = now
+    uptimeSec = _linkUpMs > 0 ? Math.floor((now - _linkUpMs) / 1000) : 0
+  }
+
   function notify(summary, body, urgency) {
     if (!notificationsOn) return
     Quickshell.execDetached(["notify-send", "-a", "Proton VPN", "-i", "network-vpn",
@@ -431,6 +483,23 @@ Item {
     refresh()
     loadCountries(false)
     loadConfig()
+  }
+
+  Process {
+    id: trafficProcess
+    running: false
+    command: []
+    stdout: StdioCollector { id: trafficStdout; waitForEnd: true }
+    onExited: function(exitCode) { if (exitCode === 0) root.trafficApply(String(trafficStdout.text || "")) }
+  }
+
+  Timer {
+    id: trafficTimer
+    interval: 1000
+    repeat: true
+    running: root.panelOpen && root.linkActive && root.linkDevice !== ""
+    triggeredOnStart: true
+    onTriggered: root.trafficSample()
   }
 
   FileView {
@@ -556,6 +625,9 @@ Item {
       var was = root.linkActive
       root.linkActive = link.active
       root.linkServer = link.server
+      root.linkDevice = link.device
+      if (link.active && !was) root.trafficReset()
+      if (!link.active && was) root.trafficReset()
       // A tunnel we didn't ask to close is the one thing a person must hear
       // about: the icon dimming is not a signal most people read.
       if (was && !link.active) {

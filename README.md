@@ -238,6 +238,19 @@ The **Server** line updates within seconds from NetworkManager even while a
 connect is still in progress. The other rows come from the CLI and can lag a
 moment behind.
 
+### Traffic
+
+While you're connected, under the details: download and upload rates, a
+60-second sparkline, and the session's totals and uptime. Download is the
+filled area in your theme's accent colour; upload is the dashed line. Hover
+the sparkline to read the values at any second. They're told apart by shape,
+not colour, so they read the same on every theme and for colour-blind eyes.
+
+The numbers come from the kernel's own counters for the tunnel interface
+(`/sys/class/net/proton0/statistics`), read once a second **only while the
+panel is open** — so it's tunnel traffic specifically, and it costs nothing
+when you're not looking.
+
 ### While a connect is in progress
 
 `protonvpn connect` blocks for anywhere from a few seconds to a minute. The
@@ -279,7 +292,9 @@ Omarchy plugin. It:
 - runs every command as an argument list, never through a shell — with one
   exception below
 - reads Proton's server cache read-only (city list, coordinates, and the map's
-  connected-city lookup all come from it), and writes exactly one file of its own
+  connected-city lookup all come from it), reads the tunnel's byte counters
+  under `/sys/class/net/` once a second while the panel is open, and writes
+  exactly one file of its own
   (`~/.local/state/omarchy-protonvpn/state.json`: recent location labels and
   whether you dismissed the Kill Switch prompt)
 

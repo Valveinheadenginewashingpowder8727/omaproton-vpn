@@ -395,6 +395,7 @@ Panel {
         countries: vpn.countries.length,
         recents: vpn.recents.length,
         cities: vpn.cities.length,
+        traffic: { device: vpn.linkDevice, samples: vpn.rxHistory.length, rx: vpn.rxRate, tx: vpn.txRate },
         currentPlace: vpn.currentPlace ? vpn.currentPlace.city + ", " + vpn.currentPlace.code : "",
         stateLoaded: vpn.stateLoaded,
         nudgeDismissed: vpn.nudgeDismissed,
@@ -655,6 +656,22 @@ Panel {
                 value: modelData.value
               }
             }
+          }
+
+          // ── Traffic ─────────────────────────────────────────────────────
+          Traffic {
+            visible: vpn.connected && vpn.linkActive
+            width: parent.width
+            rxHistory: vpn.rxHistory
+            txHistory: vpn.txHistory
+            rxRate: vpn.rxRate
+            txRate: vpn.txRate
+            sessionRx: vpn.sessionRx
+            sessionTx: vpn.sessionTx
+            uptimeSec: vpn.uptimeSec
+            foreground: root.foreground
+            accent: root.bar ? root.bar.accent : Color.accent
+            fontFamily: root.fontFamily
           }
 
           Column {
