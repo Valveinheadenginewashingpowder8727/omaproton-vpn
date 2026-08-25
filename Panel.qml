@@ -125,16 +125,26 @@ Panel {
     setSectionIndex(focusSection, Math.max(0, Math.min(count - 1, sectionIndex(focusSection))))
   }
 
-  // Put the Countries section header at the top of the view. The content
-  // height changes underneath a drill (148 rows become a handful, then the
-  // server list arrives a moment later), so this runs after layout and is
-  // called again when the servers land — otherwise the Flickable clamps to
-  // the momentarily-short content and the list ends up below the fold.
+  // Put the Countries section header at the top of the view, and keep it
+  // there while the content underneath is still changing shape.
+  //
+  // A drill swaps 148 country rows for a short placeholder, then the server
+  // list arrives a beat later. Each of those changes the Flickable's content
+  // height, and the Flickable clamps contentY to the new height the moment it
+  // learns it — which is *after* any code that ran on the click. So the
+  // anchor can't be a one-shot: it stays pending, is re-applied on every
+  // contentHeight change, and is dropped the instant the person scrolls.
+  property bool anchorPending: false
+
   function anchorCountrySection() {
-    Qt.callLater(function() {
-      if (!panelFlick || !countrySection) return
-      panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), countrySection.y))
-    })
+    anchorPending = true
+    applyAnchor()
+    Qt.callLater(applyAnchor)
+  }
+
+  function applyAnchor() {
+    if (!anchorPending || !panelFlick || !countrySection) return
+    panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), countrySection.y))
   }
 
   function drillInto(country) {
@@ -156,6 +166,7 @@ Panel {
   function moveCursor(dx, dy) {
     cursorActive = true
     ensureCursor()
+    if (dy !== 0) anchorPending = false
 
     // Horizontal moves drill in and out of a country's server list.
     if (dx !== 0) {
@@ -227,6 +238,7 @@ Panel {
   // After picking a place to connect to, bring the map and connection
   // details back into view — that's what the person wants to watch next.
   function showConnection() {
+    anchorPending = false
     cursorActive = false
     focusSection = "header"
     if (panelFlick) panelFlick.contentY = 0
@@ -277,6 +289,7 @@ Panel {
   onOpenedChanged: {
     vpn.panelOpen = opened
     if (opened) {
+      anchorPending = false
       cursorActive = false
       filterQuery = ""
       vpn.clearServers()
@@ -298,7 +311,7 @@ Panel {
     function onInstalledChanged() { root.ensureCursor() }
     function onCountriesChanged() { root.ensureCursor() }
     // Servers arrive asynchronously after a drill; re-anchor once they do.
-    function onServersLoadingChanged() { if (!vpn.serversLoading && root.drilled) root.anchorCountrySection() }
+    function onServersLoadingChanged() { if (!vpn.serversLoading && root.drilled) root.applyAnchor() }
   }
 
   IpcHandler {
@@ -407,6 +420,8 @@ Panel {
         flickableDirection: Flickable.VerticalFlick
         interactive: contentHeight > height
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        onContentHeightChanged: root.applyAnchor()
+        onMovementStarted: root.anchorPending = false
 
         // Fixed steps instead of Flickable's momentum: one wheel notch moves
         // about a row and a half, touchpads scroll by their pixel delta, and
@@ -415,6 +430,7 @@ Panel {
           target: null
           acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
           onWheel: function(event) {
+            root.anchorPending = false
             var dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : (event.angleDelta.y / 120) * Style.space(72)
             panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), panelFlick.contentY - dy))
             event.accepted = true
