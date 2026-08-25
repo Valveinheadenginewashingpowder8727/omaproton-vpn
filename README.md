@@ -1,15 +1,15 @@
-# Proton VPN for Omarchy
+# OmaProton VPN
 
-A bar widget for [Omarchy Quattro](https://omarchy.org) that puts Proton VPN in
-your status bar — and gets you from nothing to protected without opening a
-terminal yourself. Install the CLI from the panel, sign in from the panel, turn
-on the Kill Switch from the panel, then connect with one click or pick a city.
+All of Proton VPN in one simple bar widget for [Omarchy Quattro](https://omarchy.org).
+Install the CLI, sign in, connect, pick a city, switch on the Kill Switch — every
+step happens in the panel, and none of them need a terminal. Click the Proton mark,
+and you're protected.
 
 It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
 into the CLI's own prompt, and Proton's client owns the session from there.
 
-<img src="preview.png" width="360" alt="The Proton VPN panel open in the Omarchy bar">
+<img src="preview.png" width="360" alt="The OmaProton VPN panel open in the Omarchy bar">
 
 ## What you need
 

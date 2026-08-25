@@ -396,7 +396,7 @@ Panel {
             PanelHero {
               id: hero
               width: parent.width
-              title: "Proton VPN"
+              title: "OmaProton VPN"
               meta: root.heroMeta
               foreground: root.foreground
               fontFamily: root.fontFamily
