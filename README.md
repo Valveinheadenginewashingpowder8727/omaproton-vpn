@@ -85,6 +85,8 @@ connected; dimmed means disconnected, signed out, or the CLI isn't installed.
 | Right-click | Toggle — connect to the fastest server, or disconnect |
 | Middle-click | Force a status refresh |
 
+![Typing in the country filter narrows the list](docs/country-filter.png)
+
 The panel is keyboard-driven too: arrow keys move, `Enter` activates, `→` opens
 a country's city list, `←` backs out, `Esc` backs out of a city list or closes
 the panel. `/` jumps to the country filter, `c` connects to the fastest server,
@@ -118,6 +120,8 @@ with a message from the CLI; nothing breaks.
 Below quick connect is the full country list. **Clicking a country doesn't
 connect** — it drills into that country's cities, so you can see where you'll
 land before you commit.
+
+![Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags](docs/city-list.png)
 
 Inside a country:
 
