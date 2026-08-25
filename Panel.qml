@@ -411,7 +411,9 @@ Panel {
               trailingControl: Component {
                 ToggleSwitch {
                   id: powerSwitch
-                  visible: vpn.installed && vpn.signedIn
+                  // A live tunnel is enough to show the switch: you can always
+                  // disconnect, even if the account probe hasn't landed.
+                  visible: vpn.installed && (vpn.signedIn || vpn.connected)
                   checked: vpn.connected
                   busy: vpn.busy
                   hasCursor: header.ringVisible
@@ -530,7 +532,7 @@ Panel {
           // everything else the CLI printed (Load, Protocol, …) is rendered
           // as-is.
           Column {
-            visible: vpn.signedIn && vpn.connected
+            visible: vpn.connected
             width: parent.width
             spacing: Style.spacing.labelGap
 
