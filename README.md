@@ -41,7 +41,7 @@ That's it. The panel installs the Proton VPN CLI for you if it isn't there.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/grichard99/omarchy-protonvpn-plugin --enable
+omarchy plugin add https://github.com/grichard99/omaproton-vpn --enable
 ```
 
 Then click the Proton mark in your bar. The panel walks you through the rest:
@@ -57,7 +57,7 @@ Then click the Proton mark in your bar. The panel walks you through the rest:
 If you'd rather place the widget yourself, drop `--enable` and run:
 
 ```bash
-omarchy plugin enable io.github.grichard99.protonvpn right
+omarchy plugin enable io.github.grichard99.omaproton-vpn right
 ```
 
 ### Already have the Proton VPN desktop app?
@@ -78,13 +78,13 @@ session either way.
 ## Update
 
 ```bash
-omarchy plugin update io.github.grichard99.protonvpn
+omarchy plugin update io.github.grichard99.omaproton-vpn
 ```
 
 ## Remove
 
 ```bash
-omarchy plugin remove io.github.grichard99.protonvpn
+omarchy plugin remove io.github.grichard99.omaproton-vpn
 ```
 
 That disables the widget, removes it from your bar, and deletes the plugin

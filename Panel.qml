@@ -9,8 +9,8 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "io.github.grichard99.protonvpn"
-  ipcTarget: "io.github.grichard99.protonvpn"
+  moduleName: "io.github.grichard99.omaproton-vpn"
+  ipcTarget: "io.github.grichard99.omaproton-vpn"
   manageIpc: false
 
   // One keyboard cursor walks every section top to bottom. Each section has a
