@@ -398,6 +398,27 @@ Panel {
       return "ok"
     }
     function status(): string { return vpn.displayStatus + (vpn.displayServer !== "" ? " — " + vpn.displayServer : "") }
+    // View-only controls: they change what the panel shows, never the tunnel.
+    function tab(key: string): string { root.setTab(String(key)); return root.tab }
+    function drill(code: string): string {
+      var c = String(code || "").toUpperCase()
+      if (c === "") { root.drillOut(); return "ok" }
+      root.drillInto({ code: c, name: vpn.countryName(c) }); return "ok"
+    }
+    // "tabs" scrolls the tab strip to the top; a number is an absolute contentY.
+    function scroll(to: string): string {
+      if (!panelFlick) return "no panel"
+      var y = String(to) === "tabs" ? tabRow.y : parseFloat(to)
+      if (!isFinite(y)) return "bad value"
+      root.anchorPending = false
+      panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), y))
+      return String(Math.round(panelFlick.contentY))
+    }
+    function highlight(code: string, city: string): string {
+      root.drillInto({ code: String(code).toUpperCase(), name: vpn.countryName(code) })
+      root.highlight = { code: String(code).toUpperCase(), city: String(city) }
+      return "ok"
+    }
     // Deliberately omits the account email: anything running as this user can
     // call IPC, and the panel is the only place it should be readable.
     function debug(): string {

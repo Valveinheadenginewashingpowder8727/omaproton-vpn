@@ -36,7 +36,7 @@ It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
 into the CLI's own prompt, and Proton's client owns the session from there.
 
-<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel: world map, connection details, quick connect">
+<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel: world map, connection details, live traffic, quick connect">
 
 ## What you need
 
@@ -176,7 +176,7 @@ pick stays until you close the panel.
 
 ### Protection
 
-<img src="docs/quick-protection.png" width="360" alt="Quick connect rows with PLUS tags, and the Kill Switch and NetShield switches">
+<img src="docs/protection.png" width="360" alt="The Protection tab: Kill Switch and NetShield switches, account, and sign out">
 
 Two switches, saved to Proton's own settings:
 
@@ -207,9 +207,7 @@ Below that is the full country list. **Clicking a country doesn't connect** —
 it drills into that country's cities, so you can see where you'll land before
 you commit.
 
-<img src="docs/country-list.png" width="360" alt="The country list, each row opening that country's cities">
-
-<img src="docs/city-list.png" width="360" alt="Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags">
+<img src="docs/city-list.png" width="360" alt="Connections tab with Japan drilled open — Osaka, clicked on the map, is ringed">
 
 Inside a country:
 
@@ -243,6 +241,8 @@ connect is still in progress. The other rows come from the CLI and can lag a
 moment behind.
 
 ### Traffic
+
+<img src="docs/traffic.png" width="360" alt="Download and upload rates with the 60-second sparkline and session totals">
 
 While you're connected, under the details: download and upload rates, a
 60-second sparkline, and the session's totals and uptime. Download is the
