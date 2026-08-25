@@ -1,0 +1,172 @@
+// Parsing helpers for the Proton VPN CLI's human-readable output.
+//
+// The CLI has no --json anywhere, so every parser here is deliberately
+// tolerant: unknown lines are skipped rather than treated as errors, and the
+// detail rows are rendered from whatever key/value pairs `protonvpn status`
+// happens to print. A future CLI release that adds or renames a field shows
+// up as a new row instead of a broken widget.
+
+function stripAnsi(text) {
+  return String(text || "").replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "")
+}
+
+// "Label: value" lines -> ordered list plus a lowercased lookup map.
+// Guards against prose (long labels, column-aligned table rows) being
+// mistaken for fields.
+function parseKeyValues(raw) {
+  var out = { order: [], map: {} }
+  var lines = stripAnsi(raw).split("\n")
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim()
+    if (line === "") continue
+    var idx = line.indexOf(":")
+    if (idx <= 0) continue
+    var label = line.substring(0, idx).trim()
+    var value = line.substring(idx + 1).trim()
+    if (label === "" || value === "") continue
+    if (label.length > 28) continue
+    if (/\s{2,}/.test(label)) continue
+    out.order.push({ label: label, value: value })
+    out.map[label.toLowerCase()] = value
+  }
+  return out
+}
+
+// "NL#42 in Amsterdam, Netherlands" -> "NL#42"
+function serverName(server) {
+  var s = String(server || "").trim()
+  if (s === "") return ""
+  var m = s.match(/^(\S+)\s+in\s+(.+)$/)
+  return m ? m[1] : s
+}
+
+// "NL#42 in Amsterdam, Netherlands" -> "Amsterdam, Netherlands"
+function serverLocation(server) {
+  var s = String(server || "").trim()
+  if (s === "") return ""
+  var m = s.match(/^(\S+)\s+in\s+(.+)$/)
+  return m ? m[2] : ""
+}
+
+// `protonvpn status`
+//
+//   Status: Connected
+//   Server: NL#42 in Amsterdam, Netherlands
+//   Load: 21%
+//   Protocol: wireguard
+//
+// Signed out or idle it prints only "Status: Disconnected".
+function parseStatus(raw) {
+  var kv = parseKeyValues(raw)
+  var statusValue = kv.map["status"] || ""
+  // "Disconnected" contains "connect", so anchor both tests at the start.
+  var connected = /^connected/i.test(statusValue)
+  var connecting = /^connecting/i.test(statusValue)
+  var server = kv.map["server"] || ""
+
+  var fields = []
+  for (var i = 0; i < kv.order.length; i++) {
+    var key = kv.order[i].label.toLowerCase()
+    // Status and server already headline the hero — don't repeat them.
+    if (key === "status" || key === "server") continue
+    fields.push(kv.order[i])
+  }
+
+  return {
+    ok: true,
+    connected: connected,
+    connecting: connecting,
+    statusText: statusValue !== "" ? statusValue : "Unknown",
+    server: server,
+    serverName: serverName(server),
+    location: serverLocation(server),
+    fields: fields
+  }
+}
+
+// `protonvpn info` -> "Account: 'user@example.com'", or "Account: 'None'"
+// while signed out.
+function parseAccount(raw) {
+  var kv = parseKeyValues(raw)
+  var account = String(kv.map["account"] || "").replace(/^['"]|['"]$/g, "").trim()
+  var plan = String(kv.map["plan"] || "").replace(/^['"]|['"]$/g, "").trim()
+  var signedIn = account !== "" && account.toLowerCase() !== "none"
+  return {
+    signedIn: signedIn,
+    account: signedIn ? account : "",
+    plan: signedIn ? plan : ""
+  }
+}
+
+// `protonvpn countries list` -> a two-column table:
+//
+//   Country                           Code
+//   --------------------------------  ------
+//   Afghanistan                       AF
+//
+// Rows are "name<2+ spaces>CODE"; the header and rule are skipped by shape.
+function parseCountries(raw) {
+  var lines = stripAnsi(raw).split("\n")
+  var out = []
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].replace(/\s+$/, "")
+    if (line.trim() === "") continue
+    if (/^[-+=|\s]+$/.test(line)) continue
+    var m = line.match(/^\s*(.+?)\s{2,}([A-Za-z]{2})$/)
+    if (!m) continue
+    var name = m[1].trim()
+    var code = m[2].toUpperCase()
+    if (name === "" || name.toLowerCase() === "country") continue
+    out.push({ name: name, code: code })
+  }
+  return out
+}
+
+// `nmcli -t -f NAME,TYPE,DEVICE,STATE connection show --active`
+//
+// The Proton CLI names its connection "ProtonVPN <server>" on device
+// `proton0`. Its IPv6 leak-guard ("pvpn-killswitch-ipv6" on a dummy device)
+// stays active independently and must NOT count as a live tunnel.
+//
+// NAME can itself contain a colon, so fields are taken from the right.
+function parseActiveVpn(raw) {
+  var lines = stripAnsi(raw).split("\n")
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim()
+    if (line === "") continue
+    var parts = line.split(":")
+    if (parts.length < 4) continue
+    var state = parts[parts.length - 1]
+    var device = parts[parts.length - 2]
+    var type = parts[parts.length - 3]
+    var name = parts.slice(0, parts.length - 3).join(":")
+    if (!/^activated$/i.test(state)) continue
+    var isTunnel = /^proton\d*$/i.test(device) || /^ProtonVPN\s/i.test(name)
+    if (!isTunnel) continue
+    return {
+      active: true,
+      name: name,
+      server: name.replace(/^ProtonVPN\s+/i, "").trim(),
+      device: device,
+      type: type
+    }
+  }
+  return { active: false, name: "", server: "", device: "", type: "" }
+}
+
+function filterCountries(countries, query) {
+  var q = String(query || "").trim().toLowerCase()
+  if (q === "") return countries
+  var out = []
+  for (var i = 0; i < countries.length; i++) {
+    var c = countries[i]
+    if (c.name.toLowerCase().indexOf(q) !== -1 || c.code.toLowerCase().indexOf(q) === 0) out.push(c)
+  }
+  return out
+}
+
+function elide(text, max) {
+  var value = String(text || "").replace(/\s+/g, " ").trim()
+  var limit = max || 140
+  return value.length > limit ? value.substring(0, limit - 3) + "…" : value
+}

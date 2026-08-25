@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.grichard99.protonvpn",
+  "name": "Proton VPN",
+  "version": "1.0.0",
+  "author": "grichard99",
+  "license": "MIT",
+  "description": "Proton VPN status, quick connect, and country switching in the Omarchy bar.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Proton VPN",
+    "description": "Toggle Proton VPN, quick-connect by feature, and pick a country.",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 30,
+      "watchIntervalSec": 4
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Status refresh interval (seconds)",
+        "min": 5,
+        "max": 3600,
+        "step": 5,
+        "defaultValue": 30
+      },
+      {
+        "key": "watchIntervalSec",
+        "type": "integer",
+        "label": "Link watch interval (seconds)",
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 4
+      }
+    ]
+  }
+}
