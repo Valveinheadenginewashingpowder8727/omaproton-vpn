@@ -61,6 +61,14 @@ Item {
   property string serversCountryName: ""
   property bool serversLoading: false
 
+  // Every Proton city with coordinates, for the mini-map. From the client's
+  // cache too, so it exists as soon as the user has connected once.
+  property var cities: []
+  property bool citiesLoaded: false
+  // {code, city, lat, lon} for the server we're on, or null.
+  property var currentPlace: null
+  property string _locatePending: ""
+
   // `protonvpn config list`, keyed by setting name.
   property var config: ({})
   property bool configLoaded: false
@@ -288,6 +296,32 @@ Item {
     serversProcess.running = true
   }
 
+  function loadCities(force) {
+    if (!installed || citiesProcess.running) return
+    if (citiesLoaded && force !== true) return
+    citiesProcess.command = ["python3", scriptPath, "--cities"]
+    citiesProcess.running = true
+  }
+
+  // Which city the connected server is in. Runs whenever the server name
+  // changes; a lookup arriving mid-run is queued, not dropped.
+  function locateServer(name) {
+    var n = String(name || "").trim()
+    if (n === "") { currentPlace = null; _locatePending = ""; return }
+    if (currentPlace && currentPlace.name === n) return
+    if (locateProcess.running) { _locatePending = n; return }
+    locateProcess.command = ["python3", scriptPath, "--locate", n]
+    locateProcess.running = true
+  }
+
+  onDisplayServerChanged: locateServer(displayServer)
+
+  function countryName(code) {
+    var c = String(code || "").toUpperCase()
+    for (var i = 0; i < countries.length; i++) if (countries[i].code === c) return countries[i].name
+    return c
+  }
+
   function clearServers() {
     servers = []
     serversCountry = ""
@@ -497,6 +531,7 @@ Item {
           root.statusText = "Checking…"
         }
         root.refresh()
+        root.loadCities(false)
       } else if (!root.installing) {
         root.statusText = "Proton VPN CLI not installed"
       }
@@ -634,6 +669,43 @@ Item {
   }
 
   Process {
+    id: citiesProcess
+    running: false
+    command: []
+    stdout: StdioCollector { id: citiesStdout; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) return
+      try {
+        var list = JSON.parse(String(citiesStdout.text || "[]"))
+        root.cities = Array.isArray(list) ? list : []
+        root.citiesLoaded = root.cities.length > 0
+      } catch (e) {
+        root.cities = []
+      }
+    }
+  }
+
+  Process {
+    id: locateProcess
+    running: false
+    command: []
+    stdout: StdioCollector { id: locateStdout; waitForEnd: true }
+    onExited: function(exitCode) {
+      try {
+        var place = exitCode === 0 ? JSON.parse(String(locateStdout.text || "{}")) : {}
+        root.currentPlace = place && place.lat !== undefined && place.lat !== null ? place : null
+      } catch (e) {
+        root.currentPlace = null
+      }
+      if (root._locatePending !== "") {
+        var next = root._locatePending
+        root._locatePending = ""
+        root.locateServer(next)
+      }
+    }
+  }
+
+  Process {
     id: countriesProcess
     running: false
     command: []
@@ -672,6 +744,7 @@ Item {
         actionStatusTimer.restart()
         root.recordRecent(target)
         root.notify("Protected", line, "normal")
+        root.loadCities(true)
       }
       delayedRefresh.restart()
     }

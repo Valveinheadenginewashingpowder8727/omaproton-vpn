@@ -14,8 +14,10 @@ of the list, so you'd scroll past hundreds of near-identical entries before
 seeing a second city. One row per city is the choice a person actually wants
 to make.
 
-Usage: servers.py <COUNTRY_CODE> [limit]
-Prints a compact JSON array, best-first, or [] when the cache is missing.
+Usage: servers.py <COUNTRY_CODE> [limit]   one country's cities, best-first
+       servers.py --cities                  every city worldwide, with lat/long
+       servers.py --locate <SERVER_NAME>    one server's city and coordinates
+Prints compact JSON, or [] / {} when the cache is missing.
 """
 import json
 import os
@@ -41,19 +43,92 @@ def labels(features):
     return out
 
 
+def read_cache():
+    try:
+        with open(CACHE, "r") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def usable(s):
+    """Connectable, and not Secure Core (those are reached via --securecore)."""
+    return s.get("Status") == 1 and not ((s.get("Features") or 0) & SECURE_CORE)
+
+
+def all_cities(data):
+    """Every city worldwide: one entry per (country, city) with its coordinates
+    and best server. Feeds the panel's mini-map; ~200 rows for ~18k servers."""
+    out = {}
+    for s in data.get("LogicalServers") or []:
+        if not usable(s):
+            continue
+        loc = s.get("Location") or {}
+        lat, lon = loc.get("Lat"), loc.get("Long")
+        if lat is None or lon is None:
+            continue
+        code = (s.get("ExitCountry") or "").upper()
+        city = (s.get("City") or "").strip()
+        if code == "" or city == "":
+            continue
+        score = s.get("Score")
+        score = score if score is not None else 9e9
+        key = (code, city)
+        entry = out.get(key)
+        if entry is None or score < entry["score"]:
+            out[key] = {
+                "code": code,
+                "city": city,
+                "lat": round(float(lat), 3),
+                "lon": round(float(lon), 3),
+                "name": s.get("Name") or "",
+                "load": s.get("Load"),
+                "tier": s.get("Tier"),
+                "score": score,
+                "count": (entry["count"] + 1) if entry else 1,
+            }
+        else:
+            entry["count"] += 1
+    rows = sorted(out.values(), key=lambda r: (r["code"], r["city"]))
+    for r in rows:
+        del r["score"]
+    return rows
+
+
+def locate(data, name):
+    """Where one server is. Used to light up the connected city on the map."""
+    want = name.strip().upper()
+    for s in data.get("LogicalServers") or []:
+        if (s.get("Name") or "").upper() != want:
+            continue
+        loc = s.get("Location") or {}
+        return {
+            "name": s.get("Name") or "",
+            "code": (s.get("ExitCountry") or "").upper(),
+            "city": (s.get("City") or "").strip(),
+            "lat": loc.get("Lat"),
+            "lon": loc.get("Long"),
+        }
+    return {}
+
+
 def main():
     if len(sys.argv) < 2:
         print("[]")
         return
-    code = sys.argv[1].strip().upper()
-    limit = int(sys.argv[2]) if len(sys.argv) > 2 else 80
-
-    try:
-        with open(CACHE, "r") as fh:
-            data = json.load(fh)
-    except (OSError, ValueError):
+    data = read_cache()
+    if sys.argv[1] == "--cities":
+        print(json.dumps(all_cities(data) if data else [], separators=(",", ":")))
+        return
+    if sys.argv[1] == "--locate":
+        name = sys.argv[2] if len(sys.argv) > 2 else ""
+        print(json.dumps(locate(data, name) if (data and name) else {}, separators=(",", ":")))
+        return
+    if data is None:
         print("[]")
         return
+    code = sys.argv[1].strip().upper()
+    limit = int(sys.argv[2]) if len(sys.argv) > 2 else 80
 
     # city -> best server seen so far, plus a count of that city's servers.
     cities = {}

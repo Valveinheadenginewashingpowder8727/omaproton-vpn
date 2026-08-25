@@ -303,6 +303,8 @@ Panel {
         netshield: vpn.config["netshield"] || "",
         countries: vpn.countries.length,
         recents: vpn.recents.length,
+        cities: vpn.cities.length,
+        currentPlace: vpn.currentPlace ? vpn.currentPlace.city + ", " + vpn.currentPlace.code : "",
         stateLoaded: vpn.stateLoaded,
         nudgeDismissed: vpn.nudgeDismissed,
         drilledInto: vpn.serversCountry,
@@ -424,6 +426,20 @@ Panel {
                   }
                 }
               }
+            }
+          }
+
+          // ── Map ─────────────────────────────────────────────────────────
+          WorldMap {
+            visible: vpn.signedIn && vpn.cities.length > 0
+            width: parent.width
+            cities: vpn.cities
+            current: vpn.currentPlace
+            connected: vpn.connected
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+            onCityClicked: function(c) {
+              root.drillInto({ code: c.code, name: vpn.countryName(c.code) })
             }
           }
 

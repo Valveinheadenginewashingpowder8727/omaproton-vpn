@@ -1,11 +1,11 @@
 # OmaProton VPN
 
 **Proton VPN, built for Omarchy.** All of Proton in one bar widget for
-[Omarchy Quattro](https://omarchy.org): install the CLI, sign in, connect, pick a
-city, switch on the Kill Switch — every step in the panel, none of them in a
+[Omarchy Quattro](https://omarchy.org): a live world map of every city, one
+click to connect, sign-in and the Kill Switch in the panel — none of it in a
 terminal. Click the Proton mark and you're protected.
 
-<img src="preview.png" width="720" alt="OmaProton VPN — Proton VPN, built for Omarchy">
+<img src="preview.png" width="720" alt="OmaProton VPN — a live world map, one click to connect, built for Omarchy">
 
 ## Why "Oma"
 
@@ -22,6 +22,8 @@ plugin through and through:
   update` to update, `omarchy plugin remove` to remove. The CLI install goes
   through `omarchy install app`, so the sudo prompt lives in Omarchy's own
   floating terminal.
+- **A map, without a map service.** Every Proton city on a bundled world
+  outline, the connected one lit — all from files already on disk.
 - **Fast enough for a bar.** Tunnel state comes from NetworkManager in ~10 ms, so
   the icon reacts in seconds — the Python CLI is only asked for the detail rows.
 
@@ -29,7 +31,7 @@ It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — your password and 2FA code go straight
 into the CLI's own prompt, and Proton's client owns the session from there.
 
-<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel open in the Omarchy bar">
+<img src="docs/panel.png" width="360" alt="The OmaProton VPN panel: world map, connection details, quick connect">
 
 ## What you need
 
@@ -117,6 +119,23 @@ activates, `→` opens a country's city list, `←` backs out, `Esc` backs out o
 city list or closes the panel. `/` jumps to the country filter. There are no
 single-letter shortcuts on purpose — a stray keystroke should never change your
 connection.
+
+### The map
+
+<img src="docs/map.png" width="360" alt="World map with every Proton city as a dot and the connected city lit">
+
+Under the header is a world map. Every dot is a city Proton has servers in;
+the bright, pulsing one is where your traffic exits right now. Hover a dot for
+the city and its current load; click it to open that country's city list.
+
+It's drawn entirely offline. The coastlines are a single bundled outline
+(Natural Earth, public domain), the dots come from the Proton client's own
+server cache, and the connected city is looked up in that same cache by server
+name. No map tiles, no geocoding, no requests.
+
+The map doesn't show *your* location or draw a line to the server, the way the
+Proton app does. Finding your location would take a geo-IP lookup, which this
+plugin promises never to make. Lighting up the exit city is the honest version.
 
 ### The power switch
 
@@ -245,7 +264,8 @@ Omarchy plugin. It:
 - never downloads or executes remote code
 - runs every command as an argument list, never through a shell — with one
   exception below
-- reads Proton's server cache read-only, and writes exactly one file of its own
+- reads Proton's server cache read-only (city list, coordinates, and the map's
+  connected-city lookup all come from it), and writes exactly one file of its own
   (`~/.local/state/omarchy-protonvpn/state.json`: recent location labels and
   whether you dismissed the Kill Switch prompt)
 
@@ -301,7 +321,8 @@ row per city.
 
 ## Credits
 
-The Proton VPN mark is drawn from the [Simple Icons](https://simpleicons.org)
+The world outline is Natural Earth's 1:110m land data (public domain),
+projected once into `World.js`. The Proton VPN mark is drawn from the [Simple Icons](https://simpleicons.org)
 path (CC0) and recoloured to the active theme, so it isn't a scaled bitmap.
 Proton and Proton VPN are trademarks of Proton AG. This is an unofficial
 community plugin and is not affiliated with or endorsed by Proton AG.
