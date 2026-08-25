@@ -22,9 +22,9 @@ like Omarchy — because it *is* Omarchy, all the way down:
   your Wi-Fi, Bluetooth, and Tailscale panels are built from. Arrow keys walk
   it, `Esc` backs out, `/` finds a country. You already know how to use it.
 - **It stays out of the terminal.** Install, sign in, Kill Switch, connect,
-  pick a city on a map: every step is a click in the panel. The only terminal
-  you'll ever see is Proton's own password prompt, in Omarchy's floating
-  window, and it closes itself.
+  pick a city on a map: every step is a click in the panel. The only terminals
+  you'll see are Omarchy's own floating ones — the package install's password
+  prompt, and Proton's sign-in prompt — and both close themselves.
 - **A map, without a map service.** Every Proton city on a world outline, the
   connected one lit and pulsing, hover for load, click to go — all from files
   already on disk. No tiles, no geocoding, no requests.
