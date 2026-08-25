@@ -280,12 +280,13 @@ Panel {
       return "ok"
     }
     function status(): string { return vpn.displayStatus + (vpn.displayServer !== "" ? " — " + vpn.displayServer : "") }
+    // Deliberately omits the account email: anything running as this user can
+    // call IPC, and the panel is the only place it should be readable.
     function debug(): string {
       return JSON.stringify({
         installed: vpn.installed,
         accountProbed: vpn.accountProbed,
         signedIn: vpn.signedIn,
-        account: vpn.account,
         connected: vpn.connected,
         busy: vpn.busy,
         countries: vpn.countries.length,
