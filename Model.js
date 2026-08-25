@@ -124,11 +124,18 @@ function parseCountries(raw) {
 
 // `nmcli -t -f NAME,TYPE,DEVICE,STATE connection show --active`
 //
-// The Proton CLI names its connection "ProtonVPN <server>" on device
-// `proton0`. Its IPv6 leak-guard ("pvpn-killswitch-ipv6" on a dummy device)
-// stays active independently and must NOT count as a live tunnel.
+// The Proton CLI brings its tunnel up on device `proton0` as a `wireguard`
+// connection (or a `vpn`/`tun` one for OpenVPN), named "ProtonVPN <server>".
+// Only the device and the type decide whether it's a tunnel: a connection
+// name is user-chosen, so an ordinary Wi-Fi profile called "ProtonVPN x"
+// must never make the widget claim you're protected. The name is used for
+// the server label alone. Proton's IPv6 leak-guard ("pvpn-killswitch-ipv6"
+// on a dummy device) stays active independently and is not a tunnel either.
 //
 // NAME can itself contain a colon, so fields are taken from the right.
+var TUNNEL_DEVICE = /^proton\d*$/i
+var TUNNEL_TYPES = { "wireguard": true, "vpn": true, "tun": true }
+
 function parseActiveVpn(raw) {
   var lines = stripAnsi(raw).split("\n")
   for (var i = 0; i < lines.length; i++) {
@@ -141,12 +148,12 @@ function parseActiveVpn(raw) {
     var type = parts[parts.length - 3]
     var name = parts.slice(0, parts.length - 3).join(":")
     if (!/^activated$/i.test(state)) continue
-    var isTunnel = /^proton\d*$/i.test(device) || /^ProtonVPN\s/i.test(name)
-    if (!isTunnel) continue
+    if (!TUNNEL_DEVICE.test(device)) continue
+    if (!TUNNEL_TYPES[String(type).toLowerCase()]) continue
     return {
       active: true,
       name: name,
-      server: name.replace(/^ProtonVPN\s+/i, "").trim(),
+      server: name.replace(/^ProtonVPN[\s:]+/i, "").trim(),
       device: device,
       type: type
     }
