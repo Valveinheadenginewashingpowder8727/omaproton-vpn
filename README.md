@@ -97,8 +97,6 @@ activates, `→` opens a country's city list, `←` backs out, `Esc` backs out o
 city list or closes the panel. `/` jumps to the country filter, `c` connects to
 the fastest server, `d` disconnects.
 
-<img src="docs/country-filter.png" width="360" alt="Typing in the country filter narrows the list">
-
 ### The power switch
 
 The switch at the top of the panel is the same toggle as right-click. When off,
@@ -124,6 +122,8 @@ Rows marked **PLUS** need a paid plan. On a free plan they fail with a clear
 
 ### Protection
 
+<img src="docs/quick-protection.png" width="360" alt="Quick connect rows with PLUS tags, and the Kill Switch and NetShield switches">
+
 Two switches, saved to Proton's own settings:
 
 - **Kill Switch** — if the VPN drops, your internet is blocked until it's back.
@@ -148,6 +148,8 @@ people use the same two or three locations forever; this makes them one click.
 Below that is the full country list. **Clicking a country doesn't connect** —
 it drills into that country's cities, so you can see where you'll land before
 you commit.
+
+<img src="docs/country-list.png" width="360" alt="The country list, each row opening that country's cities">
 
 <img src="docs/city-list.png" width="360" alt="Japan drilled open: Fastest in Japan, then Tokyo and Osaka with load and tags">
 
