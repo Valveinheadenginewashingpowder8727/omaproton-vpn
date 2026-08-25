@@ -125,21 +125,32 @@ Panel {
     setSectionIndex(focusSection, Math.max(0, Math.min(count - 1, sectionIndex(focusSection))))
   }
 
+  // Put the Countries section header at the top of the view. The content
+  // height changes underneath a drill (148 rows become a handful, then the
+  // server list arrives a moment later), so this runs after layout and is
+  // called again when the servers land — otherwise the Flickable clamps to
+  // the momentarily-short content and the list ends up below the fold.
+  function anchorCountrySection() {
+    Qt.callLater(function() {
+      if (!panelFlick || !countrySection) return
+      panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), countrySection.y))
+    })
+  }
+
   function drillInto(country) {
     if (!country) return
     cursorActive = true
     vpn.loadServers(country.code, country.name)
     focusSection = "servers"
     serverIndex = 0
-    Qt.callLater(function() {
-      if (panelFlick && countrySection) panelFlick.contentY = Math.min(root.maxScroll(), countrySection.y)
-    })
+    anchorCountrySection()
   }
 
   function drillOut() {
     vpn.clearServers()
     focusSection = "countries"
     serverIndex = 0
+    anchorCountrySection()
   }
 
   function moveCursor(dx, dy) {
@@ -286,6 +297,8 @@ Panel {
     function onSignedInChanged() { root.ensureCursor() }
     function onInstalledChanged() { root.ensureCursor() }
     function onCountriesChanged() { root.ensureCursor() }
+    // Servers arrive asynchronously after a drill; re-anchor once they do.
+    function onServersLoadingChanged() { if (!vpn.serversLoading && root.drilled) root.anchorCountrySection() }
   }
 
   IpcHandler {
