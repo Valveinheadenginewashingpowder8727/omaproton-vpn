@@ -131,7 +131,9 @@ Panel {
     vpn.loadServers(country.code, country.name)
     focusSection = "servers"
     serverIndex = 0
-    Qt.callLater(function() { if (panelFlick) panelFlick.contentY = 0 })
+    Qt.callLater(function() {
+      if (panelFlick && countrySection) panelFlick.contentY = Math.min(root.maxScroll(), countrySection.y)
+    })
   }
 
   function drillOut() {
@@ -180,7 +182,7 @@ Panel {
     else if (focusSection === "nudge") { if (nudgeIndex === 0) vpn.toggleKillSwitch(); else vpn.dismissNudge() }
     else if (focusSection === "quick") runQuick(quickActions[quickIndex].key)
     else if (focusSection === "protection") { if (protectionIndex === 0) vpn.toggleKillSwitch(); else vpn.toggleNetShield() }
-    else if (focusSection === "recents") vpn.connectRecent(recentIndex)
+    else if (focusSection === "recents") { vpn.connectRecent(recentIndex); showConnection() }
     // Enter on a country opens its servers rather than connecting blind —
     // the first row inside is still "Fastest in <country>", so the old
     // one-keystroke behaviour is only ever one row away.
@@ -191,10 +193,12 @@ Panel {
   function activateServerRow(index) {
     if (index <= 0) {
       vpn.connectCountry(vpn.serversCountry, vpn.serversCountryName)
-      return
+    } else {
+      var s = vpn.servers[index - 1]
+      if (!s) return
+      vpn.connectServer(s.name, s.city, vpn.serversCountryName)
     }
-    var s = vpn.servers[index - 1]
-    if (s) vpn.connectServer(s.name, s.city, vpn.serversCountryName)
+    showConnection()
   }
 
   // Empty field: put the cursor in it rather than opening a terminal that
@@ -203,6 +207,18 @@ Panel {
     var u = String(usernameField.text || "").trim()
     if (u === "") { usernameField.forceActiveFocus(); return }
     if (vpn.signIn(u)) keyCatcher.forceActiveFocus()
+  }
+
+  function maxScroll() {
+    return panelFlick ? Math.max(0, panelFlick.contentHeight - panelFlick.height) : 0
+  }
+
+  // After picking a place to connect to, bring the map and connection
+  // details back into view — that's what the person wants to watch next.
+  function showConnection() {
+    cursorActive = false
+    focusSection = "header"
+    if (panelFlick) panelFlick.contentY = 0
   }
 
   function setCursor(section, index) {
@@ -378,6 +394,19 @@ Panel {
         flickableDirection: Flickable.VerticalFlick
         interactive: contentHeight > height
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+        // Fixed steps instead of Flickable's momentum: one wheel notch moves
+        // about a row and a half, touchpads scroll by their pixel delta, and
+        // the content never overshoots or coasts.
+        WheelHandler {
+          target: null
+          acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+          onWheel: function(event) {
+            var dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : (event.angleDelta.y / 120) * Style.space(72)
+            panelFlick.contentY = Math.max(0, Math.min(root.maxScroll(), panelFlick.contentY - dy))
+            event.accepted = true
+          }
+        }
 
         Column {
           id: column
@@ -745,7 +774,7 @@ Panel {
                   subtitle: modelData.subtitle || ""
                   enabled: !vpn.busy
                   onEntered: root.setCursor("recents", index)
-                  onClicked: vpn.connectRecent(index)
+                  onClicked: { vpn.connectRecent(index); root.showConnection() }
                 }
               }
             }
@@ -758,6 +787,7 @@ Panel {
 
           // ── Countries / cities ──────────────────────────────────────────
           Column {
+            id: countrySection
             visible: vpn.signedIn
             width: parent.width
             spacing: Style.space(10)
@@ -826,6 +856,7 @@ Panel {
                 if (c) {
                   vpn.connectCountry(c.code, c.name)
                   keyCatcher.forceActiveFocus()
+                  root.showConnection()
                 }
                 event.accepted = true
               }
@@ -1101,7 +1132,7 @@ Panel {
       cursorShape: vpn.busy ? Qt.ArrowCursor : Qt.PointingHandCursor
       enabled: !vpn.busy
       onEntered: root.setCursor("servers", serverRow.rowIndex)
-      onClicked: if (serverRow.server) vpn.connectServer(serverRow.server.name, serverRow.server.city, vpn.serversCountryName)
+      onClicked: if (serverRow.server) root.activateServerRow(serverRow.rowIndex)
     }
 
     RowLayout {
