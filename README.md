@@ -8,6 +8,8 @@ It drives the official `protonvpn` CLI. No API keys, no tokens, and no
 credentials are stored by this plugin — sign-in happens in the CLI's own
 interactive prompt, and Proton's client owns the session from there.
 
+![The Proton VPN panel open in the Omarchy bar](preview.png)
+
 ## Requirements
 
 | Dependency | Where it comes from | Why |
