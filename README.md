@@ -84,8 +84,9 @@ connected; dimmed means disconnected, signed out, or the CLI isn't installed.
 | Middle-click | Force a status refresh |
 
 The panel is keyboard-driven too: arrow keys move, `Enter` activates, `→` opens
-a country's city list, `←` backs out, `Esc` closes. Typing filters the country
-list.
+a country's city list, `←` backs out, `Esc` backs out of a city list or closes
+the panel. `/` jumps to the country filter, `c` connects to the fastest server,
+`d` disconnects.
 
 ### The power switch
 
