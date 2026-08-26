@@ -7,6 +7,10 @@ terminal. Click the Proton mark and you're protected.
 
 <img src="preview.png" width="720" alt="OmaProton VPN — a live world map, one click to connect, built for Omarchy">
 
+<img src="docs/omaproton.gif" width="360" alt="Live: the map lit on the connected city, traffic moving, and the panel switching through Catppuccin Latte, Gruvbox, Hackerman and Tokyo Night">
+
+*Live, and in your theme.*
+
 ## Why "Oma"
 
 Because it doesn't look like a VPN app that landed on your desktop. It looks
