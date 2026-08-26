@@ -8,7 +8,7 @@ import "World.js" as World
 // Land is a single bundled SVG path (World.js, Natural Earth, public domain)
 // drawn from the theme foreground at low alpha; every Proton city is a dim dot;
 // the connected city is a bright dot with a slow pulse. Hover a dot for its
-// name, click it to open that country's city list. Everything here is local —
+// name, click it to open that country's city list. Everything here is local,
 // no tiles, no geocoding, no requests.
 //
 // The map deliberately does not draw *your* location or a line to the server:
@@ -40,6 +40,13 @@ Item {
 
   function px(c) { return World.project(c.lon, c.lat)[0] * sx }
   function py(c) { return World.project(c.lon, c.lat)[1] * sy }
+
+  // A fast pointer can leave the map without the last dot ever seeing an
+  // "exited", which left its label stuck on screen. Clear it whenever the
+  // pointer leaves the map as a whole.
+  HoverHandler {
+    onHoveredChanged: if (!hovered) root.hovered = null
+  }
 
   // Land
   Shape {

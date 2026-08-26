@@ -15,7 +15,7 @@ traffic, credentials, or session.
 
 ## What this widget does and doesn't do
 
-Short version — the long one is in the README's *Security and privacy*
+Short version, the long one is in the README's *Security and privacy*
 section:
 
 - Stores no credentials, tokens, or account data. Sign-in goes to the
@@ -26,7 +26,7 @@ section:
 - Never uses `sudo`. The CLI install goes through Omarchy's installer, which
   owns the password prompt in a terminal.
 - Runs every command as an argument list, never through a shell, except the
-  username handed to Omarchy's terminal launcher — which is allow-listed and
+  username handed to Omarchy's terminal launcher, which is allow-listed and
   quoted first.
 - Writes one file of its own (`~/.local/state/omarchy-protonvpn/state.json`).
 

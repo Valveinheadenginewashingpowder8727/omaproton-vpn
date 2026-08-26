@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for using OmaProton VPN. Feedback is very welcome — **code is not.**
+Thanks for using OmaProton VPN. Feedback is very welcome, **code is not.**
 
 ## This repository has one author, on purpose
 
@@ -24,17 +24,17 @@ can commit:
 
 **Open an issue** for anything:
 
-- **Bugs** — what you did, what you expected, what happened. The output of
+- **Bugs**: what you did, what you expected, what happened. The output of
   `omarchy-shell io.github.grichard99.omaproton-vpn debug` (it contains no
   account details) and your Omarchy version help a lot.
-- **Feature requests** — what you're trying to do, not just the feature. Good
+- **Feature requests**: what you're trying to do, not just the feature. Good
   ideas get built; several already came from users.
-- **Design / UX feedback** — screenshots welcome. If something felt confusing,
+- **Design / UX feedback**: screenshots welcome. If something felt confusing,
   that's a bug.
-- **Docs** — if the README didn't answer your question, say what you looked
+- **Docs**: if the README didn't answer your question, say what you looked
   for.
 
-If you've found a **security problem**, please don't open a public issue —
+If you've found a **security problem**: please don't open a public issue,
 see [SECURITY.md](SECURITY.md).
 
 ## What happens to your issue

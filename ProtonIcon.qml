@@ -3,7 +3,7 @@ import QtQuick.Shapes
 import qs.Commons
 
 // The official Proton VPN mark, drawn natively from the Simple Icons path so
-// it takes the theme foreground instead of the brand purple/green — the same
+// it takes the theme foreground instead of the brand purple/green, the same
 // reason the Tailscale widget redraws its logo rather than scaling a tiny SVG.
 //
 // Source path: https://cdn.simpleicons.org/protonvpn (24x24 viewBox, CC0).

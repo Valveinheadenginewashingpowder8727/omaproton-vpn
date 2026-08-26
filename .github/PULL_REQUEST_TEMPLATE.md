@@ -1,5 +1,5 @@
 <!--
-Thank you for taking the time — but this repository does not merge pull
+Thank you for taking the time, but this repository does not merge pull
 requests, and this one will be closed.
 
 OmaProton VPN is a VPN widget with a deliberate single-author policy. Public
