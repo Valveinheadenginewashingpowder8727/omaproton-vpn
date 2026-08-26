@@ -41,6 +41,13 @@ Item {
   function px(c) { return World.project(c.lon, c.lat)[0] * sx }
   function py(c) { return World.project(c.lon, c.lat)[1] * sy }
 
+  // A fast pointer can leave the map without the last dot ever seeing an
+  // "exited", which left its label stuck on screen. Clear it whenever the
+  // pointer leaves the map as a whole.
+  HoverHandler {
+    onHoveredChanged: if (!hovered) root.hovered = null
+  }
+
   // Land
   Shape {
     anchors.fill: parent
