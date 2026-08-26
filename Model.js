@@ -67,7 +67,7 @@ function parseStatus(raw) {
   var fields = []
   for (var i = 0; i < kv.order.length; i++) {
     var key = kv.order[i].label.toLowerCase()
-    // Status and server already headline the hero — don't repeat them.
+    // Status and server already headline the hero, don't repeat them.
     if (key === "status" || key === "server") continue
     fields.push(kv.order[i])
   }
@@ -199,7 +199,7 @@ function parseConfig(raw) {
 }
 
 // Proton usernames are an email or a bare account name. Anything outside this
-// set is refused outright rather than escaped — it has no business in a
+// set is refused outright rather than escaped, it has no business in a
 // username, and refusing is simpler to reason about than quoting.
 function validUsername(text) {
   return /^[A-Za-z0-9._+@-]{1,254}$/.test(String(text || "").trim())

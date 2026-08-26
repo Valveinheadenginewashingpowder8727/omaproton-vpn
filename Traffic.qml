@@ -6,7 +6,7 @@ import qs.Commons
 //
 // One ink, like the rest of the panel: everything is drawn from the theme
 // foreground. Download is a filled area with a solid line, upload a dashed
-// line — told apart by mark, never by hue, so it reads the same on every
+// line, told apart by mark, never by hue, so it reads the same on every
 // theme and for colour-blind eyes. The rate row doubles as the legend, with
 // a miniature of each mark beside its number.
 Item {
@@ -92,7 +92,7 @@ Item {
     width: parent.width
     spacing: Style.space(6)
 
-    // Rates — also the legend: each number sits beside its own mark.
+    // Rates, also the legend: each number sits beside its own mark.
     Row {
       width: parent.width
       spacing: Style.space(16)
@@ -216,7 +216,7 @@ Item {
       }
     }
 
-    // Hover readout when present, session totals otherwise — same slot, so
+    // Hover readout when present, session totals otherwise, same slot, so
     // nothing jumps.
     Text {
       width: parent.width

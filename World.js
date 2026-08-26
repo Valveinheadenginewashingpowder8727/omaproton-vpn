@@ -1,6 +1,6 @@
 // World land outline for the panel mini-map.
 // Source: Natural Earth 1:110m land, https://www.naturalearthdata.com/
-// (public domain, made by volunteers — thank you), projected equirectangular
+// (public domain, made by volunteers, thank you), projected equirectangular
 // into a 360x150 box with latitude clipped to [-60, 90]. Generated once; the
 // plugin never fetches anything at runtime.
 .pragma library

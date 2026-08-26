@@ -20,7 +20,7 @@ git checkout -b fix/whatever
 git checkout staging && git merge --no-ff fix/whatever && git push
 ```
 
-Running the plugin from `staging` locally is fine — the installed folder is a
+Running the plugin from `staging` locally is fine, the installed folder is a
 git checkout, so `git checkout staging` in
 `~/.config/omarchy/plugins/io.github.grichard99.omaproton-vpn` switches it.
 
@@ -37,14 +37,14 @@ git checkout, so `git checkout staging` in
 3. **The store does not update itself.** Once `main` moves, the listing shows
    *Update unverified* until the new commit is verified. File the update form:
    https://github.com/HANCORE-linux/omarchy-plugin-marketplace/issues/new?template=verify-plugin.yml
-   → "Verify and publish a newer upstream commit" — plugin ID
+   → "Verify and publish a newer upstream commit", plugin ID
    `io.github.grichard99.omaproton-vpn`, repo URL, and the full 40-character
    SHA of `main` (`git rev-parse main`).
 4. The bot validates and runs the security baseline against that commit; a
    maintainer applies `approved-and-verified`; the store swaps its snapshot.
 
 Users on `main` get the new code as soon as it's pushed, via
-`omarchy plugin update` — verification is about the store badge, not delivery.
+`omarchy plugin update`, verification is about the store badge, not delivery.
 So merge to `main` only what you would ship.
 
 ## Commits

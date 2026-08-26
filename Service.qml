@@ -12,7 +12,7 @@ import "Model.js" as Model
 //     names its tunnel "ProtonVPN <server>" on device proton0, so this alone
 //     answers "are we up, and where" without paying for the Python CLI.
 //   * `protonvpn status` (~1s of Python start-up) runs only when the panel is
-//     open, on demand, and after an action — it supplies the detail rows.
+//     open, on demand, and after an action, it supplies the detail rows.
 //
 // `protonvpn connect` blocks for 30-60s, so every action is optimistic:
 // _desired pins the UI to the requested state until reality agrees.
@@ -71,7 +71,7 @@ Item {
 
   // Tunnel throughput, from the kernel's own counters for the tunnel
   // interface (/sys/class/net/<dev>/statistics). Sampled once a second, only
-  // while the panel is open and a tunnel is up — zero cost otherwise.
+  // while the panel is open and a tunnel is up, zero cost otherwise.
   property string linkDevice: ""
   property var rxHistory: []
   property var txHistory: []
@@ -98,7 +98,7 @@ Item {
   })
 
   // Persisted across restarts: last few places connected to, and whether the
-  // kill-switch nudge was dismissed. Location labels only — nothing secret.
+  // kill-switch nudge was dismissed. Location labels only, nothing secret.
   property var recents: []
   property bool nudgeDismissed: false
   property bool stateLoaded: false
@@ -359,7 +359,7 @@ Item {
   }
 
   // Sign-in is interactive (password, then a TOTP token), so it has to happen
-  // in a real terminal — the CLI only accepts them from a tty. The username
+  // in a real terminal, the CLI only accepts them from a tty. The username
   // can be typed in the panel; with none given the terminal asks for it.
   function signIn(username) {
     var u = String(username || "").trim()
@@ -639,7 +639,7 @@ Item {
       }
       root.reconcile()
       // The tunnel came up or went away behind our back (CLI in a terminal,
-      // a drop, a reconnect) — pull the detail rows back in sync.
+      // a drop, a reconnect), pull the detail rows back in sync.
       if (was !== link.active) root.refreshStatus()
       // A tunnel we didn't think we were signed in for means the account
       // state is wrong, not the link. Re-probe rather than trusting it.
@@ -669,7 +669,7 @@ Item {
     command: []
     stdout: StdioCollector { id: accountStdout; waitForEnd: true }
     onExited: function(exitCode) {
-      // A one-off failure must not latch "signed out" forever — retry instead
+      // A one-off failure must not latch "signed out" forever, retry instead
       // of leaving a signed-in user staring at a sign-in prompt.
       if (exitCode !== 0) { accountRetry.restart(); return }
       var info = Model.parseAccount(String(accountStdout.text || ""))

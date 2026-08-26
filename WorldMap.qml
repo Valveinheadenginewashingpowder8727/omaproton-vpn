@@ -8,7 +8,7 @@ import "World.js" as World
 // Land is a single bundled SVG path (World.js, Natural Earth, public domain)
 // drawn from the theme foreground at low alpha; every Proton city is a dim dot;
 // the connected city is a bright dot with a slow pulse. Hover a dot for its
-// name, click it to open that country's city list. Everything here is local —
+// name, click it to open that country's city list. Everything here is local,
 // no tiles, no geocoding, no requests.
 //
 // The map deliberately does not draw *your* location or a line to the server:

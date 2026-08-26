@@ -2,7 +2,7 @@
 """Extract one country's Proton VPN locations from the client's own cache.
 
 The CLI has no server-list command (`protonvpn servers` just prints a URL), but
-the GTK/CLI client caches the full logical server list — ~18k entries — at
+the GTK/CLI client caches the full logical server list, ~18k entries, at
 ~/.cache/Proton/VPN/serverlist.json, refreshed whenever it connects. Reading it
 here is far cheaper than a 1s CLI round-trip and gives us load and tier per
 server, which `protonvpn connect <NAME>` then accepts directly.
@@ -133,7 +133,7 @@ def main():
     # city -> best server seen so far, plus a count of that city's servers.
     cities = {}
     for s in data.get("LogicalServers") or []:
-        # Status 0 means the server is under maintenance — not connectable.
+        # Status 0 means the server is under maintenance, not connectable.
         if s.get("Status") != 1:
             continue
         if (s.get("ExitCountry") or "").upper() != code:

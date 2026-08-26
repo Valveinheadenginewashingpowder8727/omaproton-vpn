@@ -150,7 +150,7 @@ Panel {
   // A drill swaps 148 country rows for a short placeholder, then the server
   // list arrives a beat later. Each of those changes the Flickable's content
   // height, and the Flickable clamps contentY to the new height the moment it
-  // learns it — which is *after* any code that ran on the click. So the
+  // learns it, which is *after* any code that ran on the click. So the
   // anchor can't be a one-shot: it stays pending, is re-applied on every
   // contentHeight change, and is dropped the instant the person scrolls.
   property bool anchorPending: false
@@ -249,7 +249,7 @@ Panel {
       else requestSignOut()
     }
     else if (focusSection === "recents") { vpn.connectRecent(recentIndex); showConnection() }
-    // Enter on a country opens its servers rather than connecting blind —
+    // Enter on a country opens its servers rather than connecting blind,
     // the first row inside is still "Fastest in <country>", so the old
     // one-keystroke behaviour is only ever one row away.
     else if (focusSection === "countries") drillInto(filteredCountries[countryIndex])
@@ -280,7 +280,7 @@ Panel {
   }
 
   // After picking a place to connect to, bring the map and connection
-  // details back into view — that's what the person wants to watch next.
+  // details back into view, that's what the person wants to watch next.
   function showConnection() {
     clearHighlight()
     anchorPending = false
@@ -391,13 +391,13 @@ Panel {
     function connect(): string { vpn.connectFastest(); return "ok" }
     function disconnect(): string { vpn.disconnect(); return "ok" }
     function refresh(): string { vpn.refresh(); return "ok" }
-    // Load one country's city list without opening the panel — opening it
+    // Load one country's city list without opening the panel, opening it
     // steals keyboard focus, and a stray Space/Enter would connect somewhere.
     function servers(code: string): string {
       vpn.loadServers(code, code)
       return "ok"
     }
-    function status(): string { return vpn.displayStatus + (vpn.displayServer !== "" ? " — " + vpn.displayServer : "") }
+    function status(): string { return vpn.displayStatus + (vpn.displayServer !== "" ? ": " + vpn.displayServer : "") }
     // View-only controls: they change what the panel shows, never the tunnel.
     function tab(key: string): string { root.setTab(String(key)); return root.tab }
     function drill(code: string): string {
@@ -455,7 +455,7 @@ Panel {
           anchors.centerIn: parent
           // The Proton mark is a solid triangle that fills its box corner to
           // corner, so it reads larger than the neighbouring glyphs at equal
-          // size — trimmed to sit level with them.
+          // size, trimmed to sit level with them.
           iconSize: Style.space(11)
           color: root.barIconColor
           opacity: vpn.connected ? 1.0 : 0.6
@@ -614,7 +614,7 @@ Panel {
               hasCursor: root.cursorActive && root.focusSection === "install"
               icon: "󰇚"
               title: vpn.installing ? "Installing Proton VPN CLI…" : "Install Proton VPN CLI"
-              subtitle: vpn.installing ? "Finish the install in the terminal that opened" : "Opens a terminal — Omarchy handles the install"
+              subtitle: vpn.installing ? "Finish the install in the terminal that opened" : "Opens a terminal: Omarchy handles the install"
               enabled: !vpn.installing
               onEntered: root.setCursor("install", 0)
               onClicked: vpn.installCli()
@@ -622,7 +622,7 @@ Panel {
 
             Text {
               width: parent.width
-              text: "You'll also need a Proton account. A free one works — sign up at proton.me if you don't have one yet."
+              text: "You'll also need a Proton account. A free one works: sign up at proton.me if you don't have one yet."
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
@@ -634,7 +634,7 @@ Panel {
           Text {
             visible: vpn.gtkAppInstalled
             width: parent.width
-            text: "The Proton VPN desktop app is installed. It can't run alongside the CLI this widget uses — quit the app before connecting, or remove it with:  omarchy pkg drop proton-vpn-gtk-app"
+            text: "The Proton VPN desktop app is installed. It can't run alongside the CLI this widget uses. Quit the app before connecting, or remove it with:  omarchy pkg drop proton-vpn-gtk-app"
             color: root.urgent
             font.family: root.fontFamily
             font.pixelSize: Style.font.caption
@@ -644,7 +644,7 @@ Panel {
           // ── Sign in ─────────────────────────────────────────────────────
           Column {
             // Held back until the account probe lands, and never shown over a
-            // live tunnel — a connection is proof the session is valid.
+            // live tunnel, a connection is proof the session is valid.
             visible: vpn.installed && vpn.accountProbed && !vpn.signedIn && !vpn.connected
             width: parent.width
             spacing: Style.space(8)
@@ -743,7 +743,7 @@ Panel {
 
               Text {
                 width: parent.width
-                text: "If the VPN ever drops, your internet is blocked until it's back — so you're never exposed without noticing. Recommended."
+                text: "If the VPN ever drops, your internet is blocked until it's back, so you're never exposed without noticing. Recommended."
                 color: root.dim
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -1294,7 +1294,7 @@ Panel {
     property var server: null
     property int rowIndex: 0
 
-    // The row stands for a city, so any server in that city counts as current —
+    // The row stands for a city, so any server in that city counts as current,
     // status reports "NL#42 in Amsterdam, Netherlands", so match on location.
     readonly property bool isCurrent: vpn.connected && server
                                       && (vpn.displayServer === server.name
@@ -1359,7 +1359,7 @@ Panel {
           text: {
             if (!serverRow.server) return ""
             var bits = [serverRow.server.name]
-            // Tier 0 is Proton's free tier — the one thing a free user needs
+            // Tier 0 is Proton's free tier, the one thing a free user needs
             // to know before clicking.
             if (serverRow.server.tier === 0) bits.push("Free")
             var tags = serverRow.server.tags || []
