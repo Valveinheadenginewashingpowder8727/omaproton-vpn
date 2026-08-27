@@ -33,6 +33,9 @@ Panel {
   // rather than counted by hand. The caption under the app list carries no
   // cursor of its own.
   readonly property bool splitDetailVisible: vpn.splitActive
+  // The service is a private child of this panel, so this is what a harness
+  // can read to check the Kill Switch actually moved.
+  readonly property string vpnKs: vpn.config["kill-switch"] || ""
   readonly property int protectionCount: splitDetailVisible ? 7 : 5
   readonly property int signOutIndex: protectionCount - 1
 
@@ -63,6 +66,8 @@ Panel {
   // Sign out is destructive (it disconnects too), so it takes two clicks
   // within five seconds.
   property bool signOutArmed: false
+  // Same idea, for the Kill Switch: see requestKillSwitch().
+  property bool killSwitchArmed: false
 
   // Drilled into one country's server list rather than the country list.
   readonly property bool drilled: vpn.serversCountry !== ""
@@ -265,11 +270,11 @@ Panel {
     if (focusSection === "install") vpn.installCli()
     else if (focusSection === "signin") submitSignIn()
     else if (focusSection === "header") vpn.toggle()
-    else if (focusSection === "nudge") { if (nudgeIndex === 0) vpn.toggleKillSwitch(); else vpn.dismissNudge() }
+    else if (focusSection === "nudge") { if (nudgeIndex === 0) requestKillSwitch(); else vpn.dismissNudge() }
     else if (focusSection === "quick") runQuick(quickActions[quickIndex].key)
     else if (focusSection === "tabs") setTab(tabs[tabIndex].key)
     else if (focusSection === "protection") {
-      if (protectionIndex === 0) vpn.toggleKillSwitch()
+      if (protectionIndex === 0) requestKillSwitch()
       else if (protectionIndex === 1) vpn.toggleNetShield()
       else if (protectionIndex === 2) vpn.toggleAutoConnect()
       else if (protectionIndex === 3) vpn.toggleSplitTunnel()
@@ -317,6 +322,22 @@ Panel {
     focusSection = "header"
     if (panelFlick) panelFlick.contentY = 0
   }
+
+  // Turning the Kill Switch on quietly pauses split tunneling, because Proton
+  // ignores split tunneling whenever the Kill Switch is on. Nobody could be
+  // expected to work that out from looking at two switches, so the row asks
+  // once first, exactly the way signing out does. Only that direction asks:
+  // turning the Kill Switch off restores split tunneling, which is not a
+  // surprise worth stopping anyone for.
+  function requestKillSwitch() {
+    if (vpn.splitActive && !vpn.killSwitchOn) {
+      if (!killSwitchArmed) { killSwitchArmed = true; killSwitchArm.restart(); return }
+    }
+    killSwitchArmed = false
+    vpn.toggleKillSwitch()
+  }
+
+  Timer { id: killSwitchArm; interval: 5000; onTriggered: root.killSwitchArmed = false }
 
   function requestSignOut() {
     if (!signOutArmed) { signOutArmed = true; signOutArm.restart(); return }
@@ -802,7 +823,7 @@ Panel {
                   foreground: root.foreground
                   hasCursor: root.cursorActive && root.focusSection === "nudge" && root.nudgeIndex === 0
                   enabled: vpn.configPending === ""
-                  onClicked: vpn.toggleKillSwitch()
+                  onClicked: root.requestKillSwitch()
                 }
 
                 Button {
@@ -896,15 +917,25 @@ Panel {
               Toggle {
                 width: parent.width
                 label: "Kill Switch"
-                description: vpn.configPendingLabel("kill-switch")
-                  || (vpn.configLoaded ? "Block internet if the VPN drops" : "Loading…")
+                // Says what the click will cost before it is clicked: pausing
+                // split tunneling, or a reconnect, both of which used to be
+                // things you found out afterwards.
+                description: {
+                  var applying = vpn.configPendingLabel("kill-switch")
+                  if (applying !== "") return applying
+                  if (root.killSwitchArmed) return "Click again, this pauses split tunneling"
+                  if (!vpn.configLoaded) return "Loading…"
+                  if (vpn.splitActive) return "Blocks internet if the VPN drops, pauses split tunneling"
+                  if (vpn.connected) return "Blocks internet if the VPN drops, changing it reconnects"
+                  return "Block internet if the VPN drops"
+                }
                 checked: vpn.killSwitchOn
                 enabled: vpn.configLoaded && vpn.configPending === ""
                 hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 0
                 foreground: root.foreground
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 0) }
-                onClicked: { root.clearHighlight(); vpn.toggleKillSwitch() }
+                onClicked: { root.clearHighlight(); root.requestKillSwitch() }
               }
 
               Toggle {

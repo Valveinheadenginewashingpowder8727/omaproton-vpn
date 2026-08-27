@@ -200,6 +200,9 @@ Two switches saved to Proton's own settings:
   and all you'd see is the icon dimming. The CLI ships with it **off**: which is
   why the panel offers to turn it on the first time you sign in.
 
+  If split tunneling is on, turning the Kill Switch on pauses it, so the row
+  asks for a second click before it does that, the same way signing out does.
+
   Proton won't change this setting while a tunnel is up, so if you flip it
   while connected the widget drops the tunnel, makes the change, and puts you
   back on the same server. That takes as long as a normal connect, and the row
