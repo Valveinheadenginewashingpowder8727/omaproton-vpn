@@ -523,6 +523,11 @@ Item {
   property var _ksReturn: null
 
   function toggleKillSwitch() {
+    // The mirror of the check in writeSplit(): Proton ignores split tunneling
+    // whenever the kill switch is on, so the two are mutually exclusive and
+    // each one locks the other. Here rather than on the row, because the
+    // keyboard cursor calls this directly and never sees `enabled`.
+    if (splitActive) return
     var value = killSwitchOn ? "off" : "standard"
     // Nothing to work around while the tunnel is down: one CLI call, as before.
     if (!connected && !linkActive) { setConfig("kill-switch", value); return }

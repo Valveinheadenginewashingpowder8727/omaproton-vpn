@@ -200,12 +200,16 @@ Two switches saved to Proton's own settings:
   and all you'd see is the icon dimming. The CLI ships with it **off**: which is
   why the panel offers to turn it on the first time you sign in.
 
-  If split tunneling is on, turning the Kill Switch on pauses it, so the row
-  asks for a second click before it does that, the same way signing out does.
+  The Kill Switch and split tunneling can't both be on, because Proton ignores
+  split tunneling whenever the Kill Switch is on. Each row locks the other and
+  says which one to turn off, so you never have to know the rule.
 
   Proton won't change this setting while a tunnel is up, so if you flip it
   while connected the widget drops the tunnel, makes the change, and puts you
-  back on the same server. That takes as long as a normal connect, and the row
+  back on the same server. It asks first, in a dialog, because your traffic
+  isn't protected until the tunnel is back and that's your call to make, not
+  something to be told about afterwards. Cancel is preselected. Disconnected
+  there's nothing to interrupt, so it just changes. That takes as long as a normal connect, and the row
   says "Turning on…" the whole way through. Always On is held off in the
   middle, otherwise it would reconnect into the gap and the change would fail.
   If anything goes wrong, you end up back on the VPN with the setting

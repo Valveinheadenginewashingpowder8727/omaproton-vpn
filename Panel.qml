@@ -33,9 +33,11 @@ Panel {
   // rather than counted by hand. The caption under the app list carries no
   // cursor of its own.
   readonly property bool splitDetailVisible: vpn.splitActive
-  // The service is a private child of this panel, so this is what a harness
-  // can read to check the Kill Switch actually moved.
+  // The service and the dialog are private children of this panel; these are
+  // what a harness needs to check the Kill Switch actually moved, and that it
+  // asked first.
   readonly property string vpnKs: vpn.config["kill-switch"] || ""
+  readonly property alias killSwitchDialog: killSwitchConfirm
   readonly property int protectionCount: splitDetailVisible ? 7 : 5
   readonly property int signOutIndex: protectionCount - 1
 
@@ -66,8 +68,6 @@ Panel {
   // Sign out is destructive (it disconnects too), so it takes two clicks
   // within five seconds.
   property bool signOutArmed: false
-  // Same idea, for the Kill Switch: see requestKillSwitch().
-  property bool killSwitchArmed: false
 
   // Drilled into one country's server list rather than the country list.
   readonly property bool drilled: vpn.serversCountry !== ""
@@ -96,6 +96,7 @@ Panel {
   // switch off, which means a dropped tunnel silently exposes the user.
   readonly property bool nudgeVisible: vpn.signedIn && vpn.configLoaded && vpn.stateLoaded
                                        && !vpn.killSwitchOn && !vpn.nudgeDismissed
+                                       && !vpn.splitActive
 
   readonly property string heroMeta: {
     if (!vpn.installed) return vpn.installing ? "Installing…" : "Not installed"
@@ -323,21 +324,14 @@ Panel {
     if (panelFlick) panelFlick.contentY = 0
   }
 
-  // Turning the Kill Switch on quietly pauses split tunneling, because Proton
-  // ignores split tunneling whenever the Kill Switch is on. Nobody could be
-  // expected to work that out from looking at two switches, so the row asks
-  // once first, exactly the way signing out does. Only that direction asks:
-  // turning the Kill Switch off restores split tunneling, which is not a
-  // surprise worth stopping anyone for.
+  // Disconnected there is nothing to interrupt, so the change just happens.
+  // Connected, it costs a reconnect, and that is what the dialog is for.
   function requestKillSwitch() {
-    if (vpn.splitActive && !vpn.killSwitchOn) {
-      if (!killSwitchArmed) { killSwitchArmed = true; killSwitchArm.restart(); return }
-    }
-    killSwitchArmed = false
-    vpn.toggleKillSwitch()
+    if (vpn.splitActive) return
+    if (!vpn.connected) { vpn.toggleKillSwitch(); return }
+    killSwitchConfirm.selectedIndex = 0
+    killSwitchConfirm.opened = true
   }
-
-  Timer { id: killSwitchArm; interval: 5000; onTriggered: root.killSwitchArmed = false }
 
   function requestSignOut() {
     if (!signOutArmed) { signOutArmed = true; signOutArm.restart(); return }
@@ -547,17 +541,53 @@ Panel {
       // letter typed would drive the cursor instead of the input.
       blocked: filterField.activeFocus || usernameField.activeFocus
       onMoveRequested: function(dx, dy) {
+        // A dialog with the screen dimmed behind it owns the keyboard, or the
+        // cursor would be moving around underneath it unseen.
+        if (killSwitchConfirm.opened) {
+          killSwitchConfirm.selectedIndex = killSwitchConfirm.selectedIndex === 0 ? 1 : 0
+          return
+        }
         if (!root.cursorActive) { root.cursorActive = true; return }
         root.moveCursor(dx, dy)
       }
-      onActivateRequested: if (root.cursorActive) root.activateCursor()
+      onActivateRequested: {
+        if (killSwitchConfirm.opened) {
+          if (killSwitchConfirm.selectedIndex === 0) killSwitchConfirm.canceled()
+          else killSwitchConfirm.confirmed()
+          return
+        }
+        if (root.cursorActive) root.activateCursor()
+      }
       // Inside a drill, escape backs out one level before it closes the panel.
-      onCloseRequested: root.drilled ? root.drillOut() : root.close()
+      onCloseRequested: {
+        if (killSwitchConfirm.opened) { killSwitchConfirm.canceled(); return }
+        root.drilled ? root.drillOut() : root.close()
+      }
       onTabRequested: function(direction) { root.switchPanel(direction) }
       // No single-letter actions on purpose: the panel takes keyboard focus
       // when it opens, and a stray keystroke must never change the tunnel.
       onTextKey: function(t) {
         if (t === "/") filterField.forceActiveFocus()
+      }
+
+      // Changing the Kill Switch means dropping the tunnel and putting it
+      // back, and for those seconds nothing is protected. That is a real cost
+      // and the person paying it should agree to it first, so this asks rather
+      // than doing it and narrating afterwards. Cancel is preselected: the
+      // safe answer should be the one an accidental Return gives you.
+      ConfirmDialog {
+        id: killSwitchConfirm
+        anchors.fill: parent
+        z: 100
+        message: (vpn.killSwitchOn ? "Turning the Kill Switch off" : "Turning the Kill Switch on")
+          + " needs the tunnel down. You'll be disconnected and reconnected to the same server, "
+          + "and until it comes back your traffic isn't protected."
+        cancelText: "Cancel"
+        confirmText: vpn.killSwitchOn ? "Turn off" : "Turn on"
+        foreground: root.foreground
+        fontFamily: root.fontFamily
+        onCanceled: opened = false
+        onConfirmed: { opened = false; vpn.toggleKillSwitch() }
       }
 
       Flickable {
@@ -923,14 +953,13 @@ Panel {
                 description: {
                   var applying = vpn.configPendingLabel("kill-switch")
                   if (applying !== "") return applying
-                  if (root.killSwitchArmed) return "Click again, this pauses split tunneling"
                   if (!vpn.configLoaded) return "Loading…"
-                  if (vpn.splitActive) return "Blocks internet if the VPN drops, pauses split tunneling"
+                  if (vpn.splitActive) return "Turn split tunneling off to use this"
                   if (vpn.connected) return "Blocks internet if the VPN drops, changing it reconnects"
                   return "Block internet if the VPN drops"
                 }
                 checked: vpn.killSwitchOn
-                enabled: vpn.configLoaded && vpn.configPending === ""
+                enabled: vpn.configLoaded && vpn.configPending === "" && !vpn.splitActive
                 hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 0
                 foreground: root.foreground
                 fontFamily: root.fontFamily
