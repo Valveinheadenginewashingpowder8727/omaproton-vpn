@@ -986,7 +986,6 @@ Panel {
                 visible: root.splitDetailVisible
                 width: parent.width
                 label: "Apps"
-                values: vpn.splitApps
                 options: root.splitStaleApps
                 optionsCommand: ["python3", vpn.appsScriptPath]
                 placeholderText: "Search apps..."
@@ -997,6 +996,20 @@ Panel {
                 fontFamily: root.fontFamily
                 onHovered: function(on) { if (on) root.setCursor("protection", 5) }
                 onChanged: function(values) { vpn.setSplitApps(values) }
+              }
+
+              // MultiSelect writes to its own `values` when a row is ticked,
+              // and that imperative write destroys a plain declarative
+              // binding: from the first tick on, the list would show what was
+              // clicked rather than what is in the file. The visible symptom
+              // was a mode switch leaving the previous mode's apps on screen
+              // while Proton had none, which reads as "it kept my apps" when
+              // the truth is the opposite. Binding reasserts itself every time
+              // the service's list changes, so the file stays the one source.
+              Binding {
+                target: splitAppsRow
+                property: "values"
+                value: vpn.splitApps
               }
 
               Text {

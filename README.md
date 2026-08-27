@@ -264,6 +264,13 @@ Four things to know, all of them Proton's behaviour rather than the widget's:
 - **Apps only, no IP ranges.** Proton's settings file has a field for IP ranges
   but nothing on Linux reads it yet, so the widget doesn't offer one rather
   than write a setting that does nothing.
+- **IPv4 only.** Proton tags IPv4 connections and nothing else, so an app you
+  excluded still uses the VPN for anything it sends over IPv6, and in Include
+  mode an app you left out still uses the VPN over IPv6. If you need an
+  exclusion to be absolute, `protonvpn config set ipv6 off` stops the tunnel
+  carrying IPv6 at all and apps fall back to IPv4, where it works. When you
+  test this, check with `curl -4`, otherwise you may be looking at a path
+  split tunneling never touches.
 - **Flatpaks and Snaps aren't listed.** They all launch through one shared
   runner, so picking one would pick all of them. Same for anything that
   launches through a terminal chooser or a web-app handler.
