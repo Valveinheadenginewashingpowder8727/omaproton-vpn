@@ -410,11 +410,9 @@ Item {
     if (!splitLoaded) return "Loading…"
     if (!splitAvailable) return "Sign in and connect once first"
     if (!configLoaded) return "Loading…"
-    if (splitBlocked) {
-      return splitOn
-        ? "Paused while the Kill Switch is on, your apps are kept"
-        : "Turn the Kill Switch off to use this"
-    }
+    // One sentence for both cases: nothing "pauses" any more, so nothing
+    // should hint that it will come back on its own.
+    if (splitBlocked) return "Turn the Kill Switch off to use this"
     if (splitError !== "") return splitError
     if (!splitOn) return "Keep chosen apps off the VPN"
     var n = splitApps.length
@@ -436,13 +434,17 @@ Item {
   // `mutate` receives the current `features.split_tunneling` object and
   // changes it in place. Everything else in the file is whatever the last
   // read produced, untouched.
-  function writeSplit(mutate) {
+  // `evenWhenBlocked` is only for turning split tunneling off. Turning it on
+  // while the kill switch is on would write a setting Proton ignores, but
+  // turning it off is always honest, and is how the file is kept in step with
+  // what the panel has been showing.
+  function writeSplit(mutate, evenWhenBlocked) {
     if (!splitAvailable) return false
     // Proton ignores split tunneling entirely while the kill switch is on, so
     // a write then would be a setting that reads as live and does nothing.
     // Checked here rather than per caller, because the panel's rows are not
     // the only way in: the keyboard cursor calls these functions directly.
-    if (splitBlocked) return false
+    if (splitBlocked && evenWhenBlocked !== true) return false
     // The CLI rewrites this same file, so never write across one of its runs.
     if (busy || setConfigProcess.running || configPending !== "") return false
 
@@ -529,6 +531,16 @@ Item {
     // keyboard cursor calls this directly and never sees `enabled`.
     if (splitActive) return
     var value = killSwitchOn ? "off" : "standard"
+
+    // For as long as the kill switch has been on, the panel has shown split
+    // tunneling as off, because Proton was ignoring it. The flag in Proton's
+    // file can still say otherwise, and turning the kill switch off would
+    // then bring split tunneling back on its own, which reads as a switch
+    // flipping itself. So make the file agree with what the panel has been
+    // saying. Both app lists are untouched, so one click puts it back.
+    if (value === "off" && splitOn) {
+      writeSplit(function(st) { st["enabled"] = false }, true)
+    }
     // Nothing to work around while the tunnel is down: one CLI call, as before.
     if (!connected && !linkActive) { setConfig("kill-switch", value); return }
     if (_ksCycle || configPending !== "" || busy) return

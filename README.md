@@ -262,8 +262,9 @@ Four things to know, all of them Proton's behaviour rather than the widget's:
 - **It needs the Kill Switch off.** Proton skips split tunneling entirely while
   the Kill Switch is on, so the row says so and stays locked until you turn the
   Kill Switch off. The switch shows off while that's true, because nothing is
-  being split, and it says it's paused rather than off: your app lists are
-  kept, so turning the Kill Switch back off brings the whole setup back. Changing the Kill Switch needs you disconnected first, so
+  being split, and it stays off when you turn the Kill Switch back off. Your
+  app lists are kept either way, so turning it back on is one click. Neither
+  switch ever turns itself on. Changing the Kill Switch needs you disconnected first, so
   the order is: disconnect, Kill Switch off, set up split tunneling, connect.
   It's a real trade, a tunnel with holes in it can't also promise nothing
   leaks when it drops.
