@@ -499,7 +499,52 @@ Item {
     writeSplit(function(st) { st["config_by_mode"][mode]["app_paths"] = clean })
   }
 
-  function toggleKillSwitch() { setConfig("kill-switch", killSwitchOn ? "off" : "standard") }
+  // Proton refuses a kill switch change while a tunnel is up: `config set
+  // kill-switch` answers "Disconnect before changing Kill Switch". A switch
+  // you can only use while disconnected isn't a switch, and Always On makes
+  // it worse, since disconnecting by hand is undone within a few seconds.
+  //
+  // So a click while connected does the whole thing: drop the tunnel, change
+  // the setting, put the tunnel back where it was. Always On is held off
+  // across it, otherwise it would reconnect into the middle and the change
+  // would fail exactly the way it does by hand.
+  property bool _ksCycle: false
+  property string _ksValue: ""
+  property var _ksReturn: null
+
+  function toggleKillSwitch() {
+    var value = killSwitchOn ? "off" : "standard"
+    // Nothing to work around while the tunnel is down: one CLI call, as before.
+    if (!connected && !linkActive) { setConfig("kill-switch", value); return }
+    if (_ksCycle || configPending !== "" || busy) return
+
+    _ksCycle = true
+    _ksValue = value
+    // Back to where we are now, rather than to whatever Fastest picks later.
+    _ksReturn = (recents.length > 0 && Array.isArray(recents[0].args)) ? recents[0] : null
+    // The row says "Turning off…" from the first click to the last step, the
+    // same words the one-call path uses. From the outside this is one change
+    // that takes longer, not three things happening to you.
+    configPending = "kill-switch"
+    configPendingValue = value
+    disconnect()
+  }
+
+  // Called when the tunnel is down and the setting has been written, whether
+  // or not it succeeded: leaving someone disconnected because their kill
+  // switch change failed would be the worse half of a bad trade.
+  function ksCycleFinish() {
+    _ksCycle = false
+    var target = _ksReturn
+    _ksReturn = null
+    // Starting a connect clears lastError, so a failed setting's message has
+    // to be carried across it. The tunnel coming back up is not evidence the
+    // change worked, and that is exactly when someone needs to be told.
+    var carried = lastError
+    if (target) connectTo(target.args, "Reconnecting to " + target.title + "…", target, false)
+    else connectTo([], "Reconnecting to fastest…", null, false)
+    if (carried !== "") lastError = carried
+  }
   // Full protection first; the CLI refuses ads/trackers on a free plan and
   // the retry below steps down to malware-only.
   function toggleNetShield() { setConfig("netshield", netShieldOn ? "off" : "malware-ads-trackers") }
@@ -787,6 +832,10 @@ Item {
   // a server that is full or gone can't stall this forever.
   function autoReconcile() {
     if (!autoReady) return
+    // The kill switch cycle drops the tunnel on purpose and puts it back
+    // itself. Always On stepping in here is what made this impossible to do
+    // by hand in the first place.
+    if (_ksCycle) return
     if (connected || linkActive || busy) return
     if (_autoNextMs > 0 && Date.now() < _autoNextMs) return
     var t = recents.length > 0 && Array.isArray(recents[0].args) ? recents[0] : null
@@ -1110,6 +1159,10 @@ Item {
         }
         root.lastError = Model.isPlanError(err) ? "Requires a Proton VPN Plus plan" : Model.elide(err || "Setting failed")
       }
+      // Last step of a kill switch change: whatever the CLI made of it, the
+      // tunnel goes back up. Before loadConfig(), so the re-read queues behind
+      // the connect instead of racing it.
+      if (root._ksCycle) root.ksCycleFinish()
       root.loadConfig()
     }
   }
@@ -1259,6 +1312,21 @@ Item {
         root.lastError = ""
         root.actionStatus = ""
       }
+      // Second step of a kill switch change: the tunnel is down, which is the
+      // only state the CLI will accept the setting in. A failed disconnect
+      // means the tunnel is still up, so there is nothing to try and the row
+      // goes back to what the CLI last reported.
+      if (root._ksCycle) {
+        if (exitCode !== 0) {
+          root._ksCycle = false
+          root._ksReturn = null
+          root.configPending = ""
+          root.configPendingValue = ""
+        } else {
+          root.applyConfig("kill-switch", root._ksValue)
+        }
+      }
+
       root.refreshAccount()
       delayedRefresh.restart()
     }

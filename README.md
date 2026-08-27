@@ -199,6 +199,14 @@ Two switches saved to Proton's own settings:
   Without this, a dropped tunnel silently falls back to your plain connection
   and all you'd see is the icon dimming. The CLI ships with it **off**: which is
   why the panel offers to turn it on the first time you sign in.
+
+  Proton won't change this setting while a tunnel is up, so if you flip it
+  while connected the widget drops the tunnel, makes the change, and puts you
+  back on the same server. That takes as long as a normal connect, and the row
+  says "Turning on…" the whole way through. Always On is held off in the
+  middle, otherwise it would reconnect into the gap and the change would fail.
+  If anything goes wrong, you end up back on the VPN with the setting
+  unchanged, never stranded off it.
 - **NetShield**: blocks malware, ads, and trackers at the DNS level. On a free
   plan Proton only allows malware blocking; the widget steps down to that
   automatically.
