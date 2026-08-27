@@ -27,6 +27,31 @@ Panel {
   property int nudgeIndex: 0
   property int quickIndex: 0
   property int protectionIndex: 0
+
+  // The Protection section grows by three rows when split tunneling is on,
+  // so its cursor length and the position of the sign-out row are computed
+  // rather than counted by hand. The caption under the app list carries no
+  // cursor of its own.
+  readonly property bool splitDetailVisible: vpn.splitAvailable && vpn.splitOn && !vpn.splitBlocked
+  readonly property int protectionCount: splitDetailVisible ? 7 : 5
+  readonly property int signOutIndex: protectionCount - 1
+
+  // App paths Proton's file already holds that the scan no longer finds, kept
+  // as options so an app removed from the system can still be unticked.
+  readonly property var splitStaleApps: {
+    var chosen = vpn.splitApps
+    var out = []
+    for (var i = 0; i < chosen.length; i++) {
+      var path = String(chosen[i])
+      var name = path.split("/").pop()
+      out.push({ value: path, label: name, description: path })
+    }
+    return out
+  }
+
+  onSplitDetailVisibleChanged: {
+    if (protectionIndex >= protectionCount) protectionIndex = protectionCount - 1
+  }
   property int recentIndex: 0
   property int countryIndex: 0
   property int serverIndex: 0
@@ -97,7 +122,7 @@ Panel {
     list.push({ name: "quick", count: quickActions.length })
     list.push({ name: "tabs", count: tabs.length })
     if (tab === "protection") {
-      list.push({ name: "protection", count: 4 })
+      list.push({ name: "protection", count: protectionCount })
     } else {
       if (vpn.recents.length > 0) list.push({ name: "recents", count: vpn.recents.length })
       if (drilled) list.push({ name: "servers", count: serverRowCount })
@@ -247,6 +272,9 @@ Panel {
       if (protectionIndex === 0) vpn.toggleKillSwitch()
       else if (protectionIndex === 1) vpn.toggleNetShield()
       else if (protectionIndex === 2) vpn.toggleAutoConnect()
+      else if (protectionIndex === 3) vpn.toggleSplitTunnel()
+      else if (splitDetailVisible && protectionIndex === 4) splitModeRow.toggle()
+      else if (splitDetailVisible && protectionIndex === 5) splitAppsRow.toggle()
       else requestSignOut()
     }
     else if (focusSection === "recents") { vpn.connectRecent(recentIndex); showConnection() }
@@ -345,8 +373,9 @@ Panel {
     else if (focusSection === "servers") column = serverColumn
     var i = sectionIndex(focusSection)
     // The Protection column carries the Account header and rows after its
-    // three switches; the sign-out row is its last child.
-    if (focusSection === "protection" && i === 3 && column) i = column.children.length - 1
+    // switches; the sign-out row is its last child wherever the cursor for it
+    // has ended up.
+    if (focusSection === "protection" && i === signOutIndex && column) i = column.children.length - 1
     if (column && i >= 0 && i < column.children.length) scrollItemIntoView(column.children[i])
   }
 
@@ -432,6 +461,8 @@ Panel {
         busy: vpn.busy,
         killSwitch: vpn.config["kill-switch"] || "",
         configPending: vpn.configPending,
+        splitTunneling: vpn.splitOn ? vpn.splitMode : "off",
+        splitApps: vpn.splitApps.length,
         netshield: vpn.config["netshield"] || "",
         countries: vpn.countries.length,
         recents: vpn.recents.length,
@@ -912,6 +943,72 @@ Panel {
                 onClicked: { root.clearHighlight(); vpn.toggleAutoConnect() }
               }
 
+              // Proton skips split tunneling entirely while the kill switch
+              // is on, so the row says that instead of offering a switch that
+              // would look on and do nothing.
+              Toggle {
+                width: parent.width
+                label: "Split tunneling"
+                description: vpn.splitDescription()
+                checked: vpn.splitOn
+                enabled: vpn.splitAvailable && !vpn.splitBlocked
+                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 3
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                onHovered: function(on) { if (on) root.setCursor("protection", 3) }
+                onClicked: { root.clearHighlight(); vpn.toggleSplitTunnel() }
+              }
+
+              Dropdown {
+                id: splitModeRow
+                visible: root.splitDetailVisible
+                width: parent.width
+                label: "Mode"
+                value: vpn.splitMode
+                options: [
+                  { value: "exclude", label: "Exclude: chosen apps skip the VPN" },
+                  { value: "include", label: "Include: only chosen apps use the VPN" }
+                ]
+                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 4
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                onHovered: function(on) { if (on) root.setCursor("protection", 4) }
+                onChanged: function(value) { vpn.setSplitMode(value) }
+              }
+
+              // The list is scanned fresh each time the popup opens, so an app
+              // installed since the panel loaded is there without a restart.
+              // Paths already in Proton's file that no longer scan (an app
+              // that was removed) are added back as options, otherwise they
+              // could never be unticked.
+              MultiSelect {
+                id: splitAppsRow
+                visible: root.splitDetailVisible
+                width: parent.width
+                label: "Apps"
+                values: vpn.splitApps
+                options: root.splitStaleApps
+                optionsCommand: ["python3", vpn.appsScriptPath]
+                placeholderText: "Search apps..."
+                emptyText: "No apps found"
+                noSelectionText: "None chosen"
+                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 5
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                onHovered: function(on) { if (on) root.setCursor("protection", 5) }
+                onChanged: function(values) { vpn.setSplitApps(values) }
+              }
+
+              Text {
+                visible: root.splitDetailVisible
+                width: parent.width
+                text: "Restart each chosen app after connecting, or it keeps using the tunnel it started on."
+                color: Qt.darker(root.foreground, 1.5)
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
+
               // ── Account ─────────────────────────────────────────────────
               PanelSectionHeader {
                 text: "ACCOUNT"
@@ -929,12 +1026,12 @@ Panel {
 
               ActionRow {
                 width: parent.width
-                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 3
+                hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === root.signOutIndex
                 icon: "󰍃"
                 title: root.signOutArmed ? "Click again to sign out" : "Sign out"
                 subtitle: root.signOutArmed ? "Disconnects and clears the session on this computer" : "You'll need your password and 2FA to sign back in"
                 enabled: !vpn.busy
-                onEntered: root.setCursor("protection", 3)
+                onEntered: root.setCursor("protection", root.signOutIndex)
                 onClicked: root.requestSignOut()
               }
             }

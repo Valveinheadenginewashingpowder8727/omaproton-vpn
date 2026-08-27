@@ -130,6 +130,7 @@ Item {
   readonly property string statePath: stateDir + "/state.json"
 
   readonly property string scriptPath: Qt.resolvedUrl("servers.py").toString().replace(/^file:\/\//, "")
+  readonly property string appsScriptPath: Qt.resolvedUrl("apps.py").toString().replace(/^file:\/\//, "")
 
   property string actionStatus: ""
   property string lastError: ""
@@ -327,6 +328,175 @@ Item {
     lastError = ""
     setConfigProcess.command = ["protonvpn", "config", "set", key, value]
     setConfigProcess.running = true
+  }
+
+  // ── Split tunneling ─────────────────────────────────────────────────────
+  // Proton has no CLI command for this, so the widget edits Proton's own
+  // settings file. That is the only file we write that isn't ours, so the
+  // rules are strict: read it fresh, change nothing outside
+  // `features.split_tunneling`, hand every other key back exactly as found,
+  // and never create the file. A missing or unreadable file means Proton
+  // has not run here yet, and we say so rather than invent one.
+  //
+  // Nothing pushes the file at the daemon on its own. The connector reads it
+  // whenever it starts, so the `protonvpn status` we already run is what
+  // applies a change to a live tunnel; with the tunnel down it lands on the
+  // next connect either way.
+  //
+  // Two limits come from Proton, not from us. Split tunneling is skipped
+  // entirely while the kill switch is on, and an app that was already
+  // running when the tunnel came up keeps using it until it restarts,
+  // because sockets are marked as they are created.
+  readonly property string protonSettingsPath:
+    (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config"))
+    + "/Proton/VPN/settings.json"
+
+  // The whole parsed file, or null when there isn't a readable one.
+  property var protonSettings: null
+  property bool splitLoaded: false
+  property string splitError: ""
+
+  readonly property bool splitAvailable: splitLoaded && protonSettings !== null
+  // Blocked until the CLI has told us the kill switch is off, not merely
+  // until it has told us it is on: an unread config is not permission to
+  // write, and the row would otherwise be live for the second before the
+  // first `config list` lands.
+  readonly property bool splitBlocked: !configLoaded || killSwitchOn
+  readonly property bool splitOn: splitAvailable && splitSection()["enabled"] === true
+  readonly property string splitMode: {
+    var m = String(splitSection()["mode"] || "exclude")
+    return m === "include" ? "include" : "exclude"
+  }
+  // App paths for the mode in force. Proton keeps a separate list per mode
+  // and remembers both, so switching modes doesn't discard the other one.
+  readonly property var splitApps: splitAppsFor(splitMode)
+
+  function readProtonSettings(text) {
+    var data = null
+    try { data = JSON.parse(text) } catch (e) { data = null }
+    // Unparsable is treated exactly like missing: we don't rewrite a file we
+    // couldn't read, because that would throw away whatever is in it.
+    protonSettings = (data && typeof data === "object" && data["features"]) ? data : null
+    splitLoaded = true
+  }
+
+  function splitSection() {
+    if (!protonSettings) return ({})
+    var f = protonSettings["features"]
+    var st = f ? f["split_tunneling"] : null
+    return st ? st : ({})
+  }
+
+  function splitAppsFor(mode) {
+    var byMode = splitSection()["config_by_mode"]
+    var cfg = byMode ? byMode[mode] : null
+    var paths = cfg ? cfg["app_paths"] : null
+    if (!paths || typeof paths.length !== "number") return []
+    var out = []
+    for (var i = 0; i < paths.length; i++) out.push(String(paths[i]))
+    return out
+  }
+
+  // What the Split tunneling row says under its label. Here rather than in
+  // the panel because every branch of it is a state this file owns, the same
+  // way configPendingLabel() is.
+  function splitDescription() {
+    if (!splitLoaded) return "Loading…"
+    if (!splitAvailable) return "Sign in and connect once first"
+    if (!configLoaded) return "Loading…"
+    if (splitBlocked) return "Turn the Kill Switch off to use this"
+    if (splitError !== "") return splitError
+    if (!splitOn) return "Keep chosen apps off the VPN"
+    var n = splitApps.length
+    if (n === 0) return "No apps chosen yet"
+    if (splitMode === "include")
+      return n === 1 ? "Only 1 app uses the VPN" : "Only " + n + " apps use the VPN"
+    return n === 1 ? "1 app skips the VPN" : n + " apps skip the VPN"
+  }
+
+  function applySplitSettings() {
+    // Only a running connector reads the file, so this is what makes a
+    // change take hold now instead of at the next connect.
+    if (linkActive) refreshStatus()
+  }
+
+  // Every split tunneling change funnels through here, so the read-modify-
+  // write rules live in exactly one place.
+  //
+  // `mutate` receives the current `features.split_tunneling` object and
+  // changes it in place. Everything else in the file is whatever the last
+  // read produced, untouched.
+  function writeSplit(mutate) {
+    if (!splitAvailable) return false
+    // Proton ignores split tunneling entirely while the kill switch is on, so
+    // a write then would be a setting that reads as live and does nothing.
+    // Checked here rather than per caller, because the panel's rows are not
+    // the only way in: the keyboard cursor calls these functions directly.
+    if (splitBlocked) return false
+    // The CLI rewrites this same file, so never write across one of its runs.
+    if (busy || setConfigProcess.running || configPending !== "") return false
+
+    var raw = protonFile.text()
+    var data = null
+    try { data = JSON.parse(raw) } catch (e) { data = null }
+    if (!data || typeof data !== "object" || !data["features"]) {
+      splitError = "Could not read Proton's settings"
+      return false
+    }
+
+    var st = data["features"]["split_tunneling"]
+    if (!st || typeof st !== "object") {
+      splitError = "Could not read Proton's settings"
+      return false
+    }
+    if (!st["config_by_mode"]) {
+      st["config_by_mode"] = {
+        "exclude": { "mode": "exclude", "app_paths": [], "ip_ranges": [] },
+        "include": { "mode": "include", "app_paths": [], "ip_ranges": [] }
+      }
+    }
+
+    mutate(st)
+    splitError = ""
+    // Proton writes this file with an indent of 4; match it so a diff after
+    // one of our writes shows the one section that changed and nothing else.
+    protonFile.setText(JSON.stringify(data, null, 4))
+    protonSettings = data
+    applySplitSettings()
+    return true
+  }
+
+  function toggleSplitTunnel() {
+    var on = !splitOn
+    writeSplit(function(st) { st["enabled"] = on })
+  }
+
+  function setSplitMode(mode) {
+    if (mode !== "exclude" && mode !== "include") return
+    if (mode === splitMode) return
+    writeSplit(function(st) { st["mode"] = mode })
+  }
+
+  // The panel hands back the full selection rather than one add or remove,
+  // which is what MultiSelect emits and what settings.json stores anyway.
+  //
+  // Paths are only ever accepted from the installed-app scan, so a path that
+  // isn't absolute never reaches the file. Anything else is dropped rather
+  // than repaired: this is Proton's file, and a guess about what someone
+  // meant is worse than ignoring it.
+  function setSplitApps(paths) {
+    var clean = []
+    var seen = ({})
+    var arr = (paths && typeof paths.length === "number") ? paths : []
+    for (var i = 0; i < arr.length; i++) {
+      var p = String(arr[i])
+      if (p.charAt(0) !== "/" || p.indexOf("\u0000") !== -1) continue
+      if (seen[p]) continue
+      seen[p] = true
+      clean.push(p)
+    }
+    var mode = splitMode
+    writeSplit(function(st) { st["config_by_mode"][mode]["app_paths"] = clean })
   }
 
   function toggleKillSwitch() { setConfig("kill-switch", killSwitchOn ? "off" : "standard") }
@@ -668,6 +838,24 @@ Item {
     printErrors: false
     onLoaded: root.applyState(text())
     onLoadFailed: root.applyState("{}")
+  }
+
+  // Proton's file, not ours. Watched rather than polled, because the CLI
+  // rewrites it on every `config set` and the panel would otherwise show a
+  // stale copy of a file that just changed underneath it.
+  FileView {
+    id: protonFile
+    path: root.protonSettingsPath
+    printErrors: false
+    watchChanges: true
+    atomicWrites: true
+    onLoaded: root.readProtonSettings(text())
+    onFileChanged: reload()
+    // No file yet, or no permission to read it. Either way there is nothing
+    // to edit and the panel says so instead of offering a switch that would
+    // have to create it.
+    onLoadFailed: { root.protonSettings = null; root.splitLoaded = true }
+    onSaveFailed: root.splitError = "Could not save Proton's settings"
   }
 
   Timer {
