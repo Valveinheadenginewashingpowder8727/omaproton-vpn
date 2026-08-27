@@ -363,6 +363,12 @@ Item {
   // first `config list` lands.
   readonly property bool splitBlocked: !configLoaded || killSwitchOn
   readonly property bool splitOn: splitAvailable && splitSection()["enabled"] === true
+  // Whether split tunneling is actually in force, which is not the same as
+  // the flag in the file. With the kill switch on, Proton ignores the setting
+  // entirely, and a switch sitting in the on position while nothing is being
+  // split is the panel telling a comfortable lie. The setting itself is left
+  // alone, so turning the kill switch back off brings it back with its apps.
+  readonly property bool splitActive: splitAvailable && splitOn && !splitBlocked
   readonly property string splitMode: {
     var m = String(splitSection()["mode"] || "exclude")
     return m === "include" ? "include" : "exclude"
@@ -404,7 +410,11 @@ Item {
     if (!splitLoaded) return "Loading…"
     if (!splitAvailable) return "Sign in and connect once first"
     if (!configLoaded) return "Loading…"
-    if (splitBlocked) return "Turn the Kill Switch off to use this"
+    if (splitBlocked) {
+      return splitOn
+        ? "Paused while the Kill Switch is on, your apps are kept"
+        : "Turn the Kill Switch off to use this"
+    }
     if (splitError !== "") return splitError
     if (!splitOn) return "Keep chosen apps off the VPN"
     var n = splitApps.length

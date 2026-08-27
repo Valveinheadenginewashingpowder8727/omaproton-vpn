@@ -32,7 +32,7 @@ Panel {
   // so its cursor length and the position of the sign-out row are computed
   // rather than counted by hand. The caption under the app list carries no
   // cursor of its own.
-  readonly property bool splitDetailVisible: vpn.splitAvailable && vpn.splitOn && !vpn.splitBlocked
+  readonly property bool splitDetailVisible: vpn.splitActive
   readonly property int protectionCount: splitDetailVisible ? 7 : 5
   readonly property int signOutIndex: protectionCount - 1
 
@@ -950,7 +950,7 @@ Panel {
                 width: parent.width
                 label: "Split tunneling"
                 description: vpn.splitDescription()
-                checked: vpn.splitOn
+                checked: vpn.splitActive
                 enabled: vpn.splitAvailable && !vpn.splitBlocked
                 hasCursor: root.cursorActive && root.focusSection === "protection" && root.protectionIndex === 3
                 foreground: root.foreground
