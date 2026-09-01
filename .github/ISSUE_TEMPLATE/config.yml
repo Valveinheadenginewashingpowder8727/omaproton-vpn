@@ -1,8 +1,0 @@
-blank_issues_enabled: true
-contact_links:
-  - name: Security vulnerability
-    url: https://github.com/grichard99/omaproton-vpn/security/advisories/new
-    about: Private report, goes only to the maintainer. Please don't file security problems as public issues.
-  - name: OmaProton VPN on the Omarchy plugin marketplace
-    url: https://omarchyplugins.com/plugin.html?id=io.github.grichard99.omaproton-vpn
-    about: Install command, preview, and verification status.
